@@ -227,6 +227,7 @@ export const paperPositions = pgTable(
     venue: text("venue", { enum: ["hyperliquid", "polymarket", "equity", "coingecko"] }).notNull(),
     instrument: text("instrument", { enum: ["perp", "shares", "prediction", "spot"] }).notNull(),
     ticker: text("ticker").notNull(),
+    marketLabel: text("market_label").notNull(),
     direction: text("direction", { enum: ["long", "short", "yes", "no"] }).notNull(),
     status: text("status", { enum: ["open", "closed"] }).notNull().default("open"),
     collateralUsd: numeric("collateral_usd", { precision: 20, scale: 2 }).notNull(),

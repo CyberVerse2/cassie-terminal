@@ -16,6 +16,16 @@ function roundUsd(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function marketLabel(route: Route): string {
+  if (route.venue === 'polymarket') {
+    const question = (route.marketMeta as { question?: string } | null)?.question;
+    if (question) return question;
+  }
+  const ticker = route.ticker ?? '';
+  const bare = (ticker.includes(':') ? ticker.split(':').pop()! : ticker).toUpperCase();
+  return route.instrument === 'perp' ? `${bare}-USD` : bare;
+}
+
 function positionValue(position: Position, markPrice: number): number {
   const quantity = number(position.quantity);
   if (position.venue === 'polymarket' || position.direction === 'long') {
@@ -62,6 +72,7 @@ function serializePosition(position: Position) {
     venue: position.venue,
     instrument: position.instrument,
     ticker: position.ticker,
+    marketLabel: position.marketLabel,
     direction: position.direction,
     status: position.status,
     collateralUsd: collateral,
@@ -149,6 +160,7 @@ export async function placeMarketOrder(input: {
       venue: trade.route.venue,
       instrument: trade.route.instrument,
       ticker: trade.route.ticker,
+      marketLabel: marketLabel(trade.route),
       direction: input.direction,
       collateralUsd: String(roundUsd(input.amountUsd)),
       quantity: String(quantity),
