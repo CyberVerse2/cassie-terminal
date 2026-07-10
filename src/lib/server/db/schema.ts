@@ -184,3 +184,63 @@ export const routePricing = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
 );
+
+export const paperAccounts = pgTable("paper_accounts", {
+  id: uuid("id").primaryKey(),
+  startingCashUsd: numeric("starting_cash_usd", { precision: 20, scale: 2 }).notNull().default("25000"),
+  cashUsd: numeric("cash_usd", { precision: 20, scale: 2 }).notNull().default("25000"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const paperOrders = pgTable(
+  "paper_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id").notNull().references(() => paperAccounts.id),
+    ideaId: uuid("idea_id").notNull().references(() => tradeIdeas.id),
+    routeId: uuid("route_id").notNull().references(() => routes.id),
+    venue: text("venue", { enum: ["hyperliquid", "polymarket", "equity", "coingecko"] }).notNull(),
+    instrument: text("instrument", { enum: ["perp", "shares", "prediction", "spot"] }).notNull(),
+    ticker: text("ticker").notNull(),
+    direction: text("direction", { enum: ["long", "short", "yes", "no"] }).notNull(),
+    requestedUsd: numeric("requested_usd", { precision: 20, scale: 2 }).notNull(),
+    status: text("status", { enum: ["filled", "rejected"] }).notNull(),
+    fillPrice: numeric("fill_price", { precision: 20, scale: 8 }),
+    filledQuantity: numeric("filled_quantity", { precision: 28, scale: 12 }),
+    feeUsd: numeric("fee_usd", { precision: 20, scale: 2 }).notNull().default("0"),
+    rejectionReason: text("rejection_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    filledAt: timestamp("filled_at", { withTimezone: true }),
+  },
+  (t) => [index("paper_orders_account_created_idx").on(t.accountId, t.createdAt)],
+);
+
+export const paperPositions = pgTable(
+  "paper_positions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id").notNull().references(() => paperAccounts.id),
+    orderId: uuid("order_id").notNull().references(() => paperOrders.id).unique(),
+    ideaId: uuid("idea_id").notNull().references(() => tradeIdeas.id),
+    routeId: uuid("route_id").notNull().references(() => routes.id),
+    venue: text("venue", { enum: ["hyperliquid", "polymarket", "equity", "coingecko"] }).notNull(),
+    instrument: text("instrument", { enum: ["perp", "shares", "prediction", "spot"] }).notNull(),
+    ticker: text("ticker").notNull(),
+    direction: text("direction", { enum: ["long", "short", "yes", "no"] }).notNull(),
+    status: text("status", { enum: ["open", "closed"] }).notNull().default("open"),
+    collateralUsd: numeric("collateral_usd", { precision: 20, scale: 2 }).notNull(),
+    quantity: numeric("quantity", { precision: 28, scale: 12 }).notNull(),
+    entryPrice: numeric("entry_price", { precision: 20, scale: 8 }).notNull(),
+    currentMarkPrice: numeric("current_mark_price", { precision: 20, scale: 8 }).notNull(),
+    currentValueUsd: numeric("current_value_usd", { precision: 20, scale: 2 }).notNull(),
+    unrealizedPnlUsd: numeric("unrealized_pnl_usd", { precision: 20, scale: 2 }).notNull().default("0"),
+    realizedPnlUsd: numeric("realized_pnl_usd", { precision: 20, scale: 2 }),
+    markError: text("mark_error"),
+    openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closePrice: numeric("close_price", { precision: 20, scale: 8 }),
+  },
+  (t) => [index("paper_positions_account_status_idx").on(t.accountId, t.status, t.openedAt)],
+);

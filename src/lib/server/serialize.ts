@@ -77,8 +77,11 @@ function sincePostedPct(
   return Number((raw * sign).toFixed(4));
 }
 
-async function liveCurrentPrice(route: RouteRow): Promise<number> {
-  if (!route.venue || !route.ticker || !route.direction) {
+export async function liveCurrentPrice(
+  route: RouteRow,
+  direction: RouteRow["direction"] = route.direction,
+): Promise<number> {
+  if (!route.venue || !route.ticker || !direction) {
     throw new Error('routed idea is missing venue, ticker, or direction');
   }
 
@@ -97,7 +100,7 @@ async function liveCurrentPrice(route: RouteRow): Promise<number> {
       return price;
     }
     case 'polymarket': {
-      const price = await pm.currentPrice(route.ticker, route.direction === 'no' ? 'no' : 'yes');
+      const price = await pm.currentPrice(route.ticker, direction === 'no' ? 'no' : 'yes');
       if (price === null) throw new Error(`Polymarket returned no live price for ${route.ticker}`);
       return price;
     }
