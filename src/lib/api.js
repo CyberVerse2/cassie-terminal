@@ -19,6 +19,17 @@ async function getJSON(path, { signal } = {}) {
   return res.json();
 }
 
+async function postJSON(path, body) {
+  const res = await fetch(BASE + path, {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.error || `${path} → ${res.status} ${res.statusText}`);
+  return payload;
+}
+
 /** Feed cards for a tab. `tab` ∈ all|perps|stocks|tokens|markets. */
 export async function fetchIdeas(tab = 'all', { limit = 50, signal } = {}) {
   const data = await getJSON(`/ideas?tab=${encodeURIComponent(tab)}&limit=${limit}`, { signal });
@@ -44,4 +55,17 @@ export function fetchStatus({ signal } = {}) {
 export async function fetchTradeGroups({ tab = 'all', limit = 60, signal } = {}) {
   const data = await getJSON(`/trade-groups?tab=${encodeURIComponent(tab)}&limit=${limit}`, { signal });
   return data.groups ?? [];
+}
+
+
+export function fetchPaperPortfolio({ signal } = {}) {
+  return getJSON('/paper/portfolio', { signal });
+}
+
+export function placePaperOrder(input) {
+  return postJSON('/paper/orders', input);
+}
+
+export function closePaperPosition(positionId) {
+  return postJSON(`/paper/positions/${encodeURIComponent(positionId)}/close`);
 }

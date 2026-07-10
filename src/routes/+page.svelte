@@ -22,6 +22,20 @@
     try { state.status = await api.fetchStatus(); } catch { /* header just stays "connecting…" */ }
   }
 
+  async function loadPortfolio() {
+    try {
+      const paper = await api.fetchPaperPortfolio();
+      setState({
+        cash: paper.cashUsd,
+        positions: paper.openPositions,
+        closedPositions: paper.closedPositions,
+        portfolioError: null,
+      });
+    } catch (e) {
+      state.portfolioError = String(e?.message ?? e);
+    }
+  }
+
   async function loadIdeas(tab) {
     const token = ++ideasToken;
     setState({ ideasLoading: true, ideasError: null });
@@ -63,7 +77,7 @@
     const card = state.ideas.find((c) => c.id === id);
     setState({
       selId: id, mobileScreen: 'terminal', placed: false, amount: '',
-      orderDirection: null, appliedSetup: null, detail: null, detailError: null, detailLoading: true, author: null,
+      orderDirection: null, appliedSetup: null, detail: null, detailError: null, detailLoading: true, author: null, tradeError: null,
     });
     const token = ++detailToken;
     try {
@@ -99,12 +113,12 @@
     await Promise.all([loadIdeas(state.tab), loadStatus()]);
   }
   function setAmount(v) { state.amount = v; }
-  function quickEnter(id, amount) {
+  async function quickEnter(id, amount) {
     const card = state.ideas.find((idea) => idea.id === id);
     if (!card || amount > state.cash || card.currentPrice == null || card.currentPriceError) return;
     selectIdea(id);
     setState({ amount: String(amount), orderDirection: card.direction });
-    place();
+    await place({ ideaId: id, direction: card.direction, amount });
   }
   function setOrderDirection(orderDirection) { setState({ orderDirection, appliedSetup: null, placed: false }); }
   function applyRecommendedSetup() {
@@ -113,29 +127,43 @@
     setState({ orderDirection: setup.side, appliedSetup: setup, placed: false });
   }
 
-  function place() {
+  async function place(overrides = {}) {
     const sel = state.ideas.find((x) => x.id === state.selId) || state.detail;
     if (!sel || sel.currentPrice == null || sel.currentPriceError) return;
-    const a = parseFloat(state.amount) || 0;
+    const a = overrides.amount ?? (parseFloat(state.amount) || 0);
     if (a <= 0 || a > state.cash) return;
-    const price = sel.currentPrice;
-    const direction = DIR[state.orderDirection ?? sel.direction] || 'Long';
+    const side = overrides.direction ?? state.orderDirection ?? sel.direction;
+    const direction = DIR[side] || 'Long';
     const setup = state.appliedSetup;
-    const pos = { market: sel.ticker, venue: sel.venueLabel, kind: sel.category, dir: direction, amount: a, entry: price, now: price, setup };
-    setState((s) => ({
-      positions: [pos, ...s.positions], cash: s.cash - a, placed: true, tradeOpen: true,
-      placedInfo: `${direction} · ${sel.ticker} · ${money(a)}, paper fill at ${fmtPrice(price)}.${setup ? ' Recommended setup attached.' : ''}`,
-    }));
+    setState({ tradeSubmitting: true, tradeError: null });
+    try {
+      const result = await api.placePaperOrder({
+        ideaId: overrides.ideaId ?? sel.id,
+        direction: side,
+        amountUsd: a,
+      });
+      await loadPortfolio();
+      setState({
+        placed: true,
+        tradeOpen: true,
+        tradeSubmitting: false,
+        placedInfo: `${direction} · ${result.position.marketLabel} · ${money(a)}, paper fill at ${fmtPrice(result.position.entryPrice)}.${setup ? ' Recommended setup attached.' : ''}`,
+      });
+    } catch (e) {
+      setState({ tradeSubmitting: false, tradeError: String(e?.message ?? e) });
+    }
   }
 
-  function closePosition(i) {
-    setState((s) => {
-      const positions = s.positions.slice();
-      const [p] = positions.splice(i, 1);
-      const bull = p.dir === 'Long' || p.dir === 'Yes';
-      const val = p.amount + p.amount * (p.now / p.entry - 1) * (bull ? 1 : -1);
-      return { positions, cash: s.cash + val };
-    });
+  async function closePosition(id) {
+    setState({ closingPositionId: id, portfolioError: null });
+    try {
+      await api.closePaperPosition(id);
+      await loadPortfolio();
+    } catch (e) {
+      state.portfolioError = String(e?.message ?? e);
+    } finally {
+      state.closingPositionId = null;
+    }
   }
 
   const actions = { setState, selectIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition };
@@ -143,11 +171,13 @@
   onMount(() => {
     loadStatus();
     loadIdeas(state.tab);
+    loadPortfolio();
     const statusTimer = setInterval(loadStatus, 60_000);
+    const portfolioTimer = setInterval(loadPortfolio, 30_000);
     const onResize = () => { if (Math.abs(window.innerWidth - state.vw) > 2) state.vw = window.innerWidth; };
     window.addEventListener('resize', onResize);
     state.vw = window.innerWidth;
-    return () => { clearInterval(statusTimer); window.removeEventListener('resize', onResize); };
+    return () => { clearInterval(statusTimer); clearInterval(portfolioTimer); window.removeEventListener('resize', onResize); };
   });
 
   let vals = $derived(computeVals(state, actions));

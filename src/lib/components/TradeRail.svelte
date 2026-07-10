@@ -82,6 +82,7 @@
 
       <button class="place-button hov hov-bright8" type="button" onclick={vals.place} disabled={!vals.canPlace}
         style="background:{vals.placeBg}; color:{vals.placeFg}; cursor:{vals.placeCursor}">{vals.placeLabel}</button>
+      {#if vals.tradeError}<p class="trade-error" role="alert">{vals.tradeError}</p>{/if}
       <p class="paper-note">Paper trade only. No order is sent.</p>
 
       <section class="positions-preview">
@@ -165,6 +166,7 @@
   .place-button { height: 48px; margin-top: 20px; font-size: 14px; }
   .place-button:disabled { cursor: not-allowed; }
   .paper-note { margin: 10px 0 0; color: #62646B; font-size: 10px; text-align: center; }
+  .trade-error { margin: 10px 0 0; color: #E87970; font-size: 10.5px; line-height: 1.4; text-align: center; }
   .positions-preview { margin-top: 26px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.07); }
   .positions-preview header { display: flex; align-items: center; justify-content: space-between; }
   .positions-preview header > strong { color: #777981; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }

@@ -43,6 +43,11 @@ export const initialState = {
   placedInfo: '',
   cash: PAPER_START_CASH,
   positions: [],
+  closedPositions: [],
+  portfolioError: null,
+  tradeError: null,
+  tradeSubmitting: false,
+  closingPositionId: null,
   // ui / responsive
   vw: typeof window !== 'undefined' ? window.innerWidth : 1280,
   portfolioOpen: false,
@@ -93,8 +98,7 @@ const PLAN_BASIS = {
 
 // ---------- paper-portfolio math ----------
 function posCalc(p) {
-  const pnl = p.amount * (p.now / p.entry - 1) * (isBull(p.dir) ? 1 : -1);
-  return { val: p.amount + pnl, pnl };
+  return { val: p.currentValueUsd, pnl: p.pnlUsd };
 }
 
 // ---------- the derived view-model ----------
@@ -129,7 +133,10 @@ export function computeVals(state, actions) {
   const deployed = calcs.reduce((a, c) => a + c.val, 0);
   const upnl = calcs.reduce((a, c) => a + c.pnl, 0);
   const total = S.cash + deployed;
-  const byKind = (k) => S.positions.reduce((a, p, i) => a + (p.kind === k ? calcs[i].val : 0), 0);
+  const positionKind = (p) => p.instrument === 'perp' ? 'perps'
+    : p.instrument === 'shares' ? 'stocks'
+      : p.instrument === 'spot' ? 'tokens' : 'markets';
+  const byKind = (k) => S.positions.reduce((a, p, i) => a + (positionKind(p) === k ? calcs[i].val : 0), 0);
   const allocSegs = [
     { label: 'Perps', v: byKind('perps'), color: '#37B87D' },
     { label: 'Stocks', v: byKind('stocks'), color: '#8FB8DE' },
@@ -140,13 +147,25 @@ export function computeVals(state, actions) {
   const posRows = S.positions.map((p, i) => {
     const c = calcs[i];
     return {
-      market: p.market, venue: p.venue, dir: dirWord(p.dir), dirColor: dirColor(p.dir),
-      sizeFmt: money(p.amount), entryNow: fmtPrice(p.entry) + ' → ' + fmtPrice(p.now),
+      market: p.marketLabel, venue: p.venue.toUpperCase(), dir: dirWord(p.direction), dirColor: dirColor(p.direction),
+      sizeFmt: money(p.collateralUsd), entryNow: fmtPrice(p.entryPrice) + ' → ' + fmtPrice(p.currentMarkPrice),
       pnlFmt: (c.pnl >= 0 ? '+' : '') + money(c.pnl).replace('$-', '-$'),
       pnlColor: signColor(c.pnl),
-      close: () => actions.closePosition(i),
+      markError: p.markError,
+      closing: S.closingPositionId === p.id,
+      close: () => actions.closePosition(p.id),
     };
   });
+  const closedRows = S.closedPositions.map((p) => ({
+    market: p.marketLabel,
+    venue: p.venue.toUpperCase(),
+    dir: dirWord(p.direction),
+    dirColor: dirColor(p.direction),
+    sizeFmt: money(p.collateralUsd),
+    entryNow: fmtPrice(p.entryPrice) + ' → ' + fmtPrice(p.closePrice),
+    pnlFmt: (p.pnlUsd >= 0 ? '+' : '') + money(p.pnlUsd).replace('$-', '-$'),
+    pnlColor: signColor(p.pnlUsd),
+  }));
   // ---- feed ----
   const horizonIdeas = S.horizon === 'all'
     ? S.ideas
@@ -208,7 +227,7 @@ export function computeVals(state, actions) {
     const tier = convictionTier(sel.conviction);
     const priceErr = !!sel.currentPriceError;
     const a = parseFloat(S.amount) || 0;
-    const valid = a > 0 && a <= S.cash && !priceErr && sel.currentPrice != null;
+    const valid = a > 0 && a <= S.cash && !priceErr && sel.currentPrice != null && !S.tradeSubmitting;
     const callSide = dirWord(sel.direction);
     const selectedDirection = S.orderDirection ?? sel.direction;
     const orderSide = dirWord(selectedDirection);
@@ -328,7 +347,7 @@ export function computeVals(state, actions) {
       canPlace: valid,
       placeBg: valid ? '#D8B87E' : '#1E2027', placeFg: valid ? '#141414' : '#6C6E75',
       placeCursor: valid ? 'pointer' : 'not-allowed',
-      placeLabel: priceErr ? 'Price unavailable' : a > S.cash ? 'Insufficient balance' : 'Place trade',
+      placeLabel: S.tradeSubmitting ? 'Placing…' : priceErr ? 'Price unavailable' : a > S.cash ? 'Insufficient balance' : 'Place trade',
       place: () => actions.place(),
     };
   }
@@ -364,9 +383,12 @@ export function computeVals(state, actions) {
     upnlFmt: (upnl >= 0 ? '+' : '') + money(upnl), upnlColor: signColor(upnl),
     upnlArrow: upnl >= 0 ? '▲' : '▼', upnlBg: upnl >= 0 ? 'rgba(82,196,137,0.12)' : 'rgba(224,96,85,0.12)',
     upnlPctFmt: (upnl >= 0 ? '+' : '−') + Math.abs(total - upnl === 0 ? 0 : (upnl / (total - upnl)) * 100).toFixed(2) + '%',
-    allocSegs, posRows,
+    allocSegs, posRows, closedRows,
     positionPreview: posRows.slice(0, 2),
     hasPositions: S.positions.length > 0, noPositions: S.positions.length === 0,
+    hasClosedPositions: S.closedPositions.length > 0,
+    portfolioError: S.portfolioError,
+    tradeError: S.tradeError,
     ...term,
   };
 }

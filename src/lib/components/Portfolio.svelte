@@ -9,6 +9,9 @@
     <button class="hov hov-text" type="button" aria-label="Close portfolio" onclick={vals.togglePortfolio} style="width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,0.11); background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8A8C93; font-size:16px">✕</button>
   </div>
   <div style="margin-top:6px; font-size:13px; color:#8A8C93">Deployed and available across every venue.</div>
+  {#if vals.portfolioError}
+    <div role="alert" style="margin-top:14px; border:1px solid rgba(224,96,85,.28); border-radius:9px; background:rgba(224,96,85,.08); padding:10px 12px; color:#E87970; font-size:11px">{vals.portfolioError}</div>
+  {/if}
 
   <div style="display:flex; gap:40px; align-items:flex-end; margin-top:26px; flex-wrap:wrap">
     <div>
@@ -52,7 +55,7 @@
           </div>
           <div style="text-align:right; flex-shrink:0">
             <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:{p.pnlColor}">{p.pnlFmt}</div>
-            <button class="hov hov-close" type="button" onclick={p.close} style="margin-top:7px; background:transparent; font-size:11px; font-weight:600; color:#8A8C93; border:1px solid rgba(255,255,255,0.12); border-radius:7px; padding:5px 12px; cursor:pointer">Close</button>
+            <button class="hov hov-close" type="button" onclick={p.close} disabled={p.closing} style="margin-top:7px; background:transparent; font-size:11px; font-weight:600; color:#8A8C93; border:1px solid rgba(255,255,255,0.12); border-radius:7px; padding:5px 12px; cursor:{p.closing ? 'wait' : 'pointer'}">{p.closing ? 'Closing…' : 'Close'}</button>
           </div>
         </div>
       {/each}
@@ -61,4 +64,20 @@
       <div style="border:1px dashed rgba(255,255,255,0.12); border-radius:12px; padding:32px; text-align:center; color:#6C6E75; font-size:13px">No open positions yet. Pick an idea from The Desk to get started.</div>
     {/if}
   </div>
+
+  {#if vals.hasClosedPositions}
+    <div style="margin-top:34px">
+      <div style="font-size:10px; letter-spacing:0.13em; font-weight:700; color:#6C6E75; margin-bottom:12px">CLOSED POSITIONS</div>
+      {#each vals.closedRows as p}
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:14px; padding:13px 0; border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="min-width:0; flex:1">
+            <div style="font-size:13.5px; font-weight:600; line-height:1.3; text-wrap:pretty">{p.market}</div>
+            <div style="margin-top:3px; font-size:11px; color:#6C6E75"><span style="color:{p.dirColor}; font-weight:700">{p.dir}</span> · {p.venue} · {p.sizeFmt}</div>
+            <div style="margin-top:2px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#8A8C93">{p.entryNow}</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:{p.pnlColor}">{p.pnlFmt}</div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
