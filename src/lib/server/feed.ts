@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, schema } from './db/client';
 import { toFeedCard, toDetail, type FeedRow } from './serialize';
 import * as alpaca from './venues/alpaca';
@@ -94,7 +94,25 @@ export async function listTradeCandidates(limit: number, tab = 'all') {
 export async function getIdea(id: string) {
   const [row] = (await baseQuery().where(eq(tradeIdeas.id, id)).limit(1)) as FeedRow[];
   if (!row) return null;
-  return toDetail(row);
+  const opposingDirection = ({ long: 'short', short: 'long', yes: 'no', no: 'yes' } as const)[
+    row.route.direction as 'long' | 'short' | 'yes' | 'no'
+  ];
+  const [invalidatingRow] = row.route.ticker && row.route.venue && opposingDirection
+    ? (await baseQuery()
+      .where(and(
+        eq(routes.status, 'routed'),
+        eq(routes.ticker, row.route.ticker),
+        eq(routes.venue, row.route.venue),
+        eq(routes.direction, opposingDirection),
+        ne(tradeIdeas.id, id),
+      ))
+      .orderBy(
+        sql`case ${tradeIdeas.conviction} when 'high' then 3 when 'medium' then 2 else 1 end desc`,
+        desc(tradeIdeas.postedAt),
+      )
+      .limit(1)) as FeedRow[]
+    : [];
+  return toDetail(row, invalidatingRow ?? null);
 }
 
 const DAY_MS = 86_400_000;

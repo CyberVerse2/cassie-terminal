@@ -104,6 +104,27 @@
             </section>
           {/if}
 
+          {#if vals.t_invalidatingThesis}
+            <section class="brief-section counter-thesis">
+              <h2>Invalidating thesis in your feed</h2>
+              <article>
+                <div class="counter-source">
+                  <img src={vals.t_invalidatingThesis.author.avatarUrl} alt="" />
+                  <div>
+                    <strong>{vals.t_invalidatingThesis.author.name}</strong>
+                    <span>@{vals.t_invalidatingThesis.author.handle} · {vals.t_invalidatingThesis.age}</span>
+                  </div>
+                  <b style="color:{vals.t_invalidatingThesis.directionColor}">{vals.t_invalidatingThesis.directionLabel}</b>
+                </div>
+                <h3>{vals.t_invalidatingThesis.thesis}</h3>
+                <p>{vals.t_invalidatingThesis.text}</p>
+                {#if vals.t_invalidatingThesis.sourceUrl}
+                  <a href={vals.t_invalidatingThesis.sourceUrl} target="_blank" rel="noreferrer">View opposing post ↗</a>
+                {/if}
+              </article>
+            </section>
+          {/if}
+
           {#if vals.t_assetContext || vals.t_leverageReason || vals.t_leverageSteps.length}
             <section class="brief-section asset-lever">
               <h2>Why this asset</h2>
@@ -192,6 +213,16 @@
   .driver-row { display: flex; align-items: flex-start; gap: 12px; }
   .driver-row > span { width: 6px; height: 6px; margin-top: 9px; flex-shrink: 0; border-radius: 50%; background: #D8B87E; }
   .driver-row p { max-width: 70ch; margin: 0; color: #C4C6CC; font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+  .counter-thesis > article { max-width: 960px; border: 1px solid rgba(224,96,85,.24); border-radius: 11px; background: rgba(224,96,85,.045); padding: 18px; }
+  .counter-source { display: flex; align-items: center; gap: 10px; }
+  .counter-source img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #181A20; }
+  .counter-source div { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+  .counter-source strong { color: #E1E1DE; font-size: 12px; }
+  .counter-source span { margin-top: 2px; color: #777981; font-size: 10px; }
+  .counter-source b { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .06em; }
+  .counter-thesis h3 { margin: 15px 0 0; color: #E5E4DF; font-size: 17px; line-height: 1.4; }
+  .counter-thesis p { max-width: 76ch; margin: 8px 0 0; color: #AEB0B7; font-size: 14px; line-height: 1.55; }
+  .counter-thesis a { display: inline-block; margin-top: 13px; color: #D8B87E; font-size: 11px; font-weight: 650; text-decoration: none; }
   .asset-lever-grid { display: grid; max-width: 960px; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
   .asset-lever-grid > div, .exposure-chain { border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; background: #0D0F13; padding: 16px 18px; }
   .asset-lever h3 { margin: 0; color: #8F9198; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }

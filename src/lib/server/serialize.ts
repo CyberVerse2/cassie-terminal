@@ -167,7 +167,7 @@ export async function toFeedCard(row: FeedRow) {
 }
 
 /** Full detail — adds the reasoning the card hides. */
-export async function toDetail(row: FeedRow) {
+export async function toDetail(row: FeedRow, invalidatingRow: FeedRow | null = null) {
   const { idea, route } = row;
   const strategy = idea.strategy;
   const authorComponent = (text: string | null) => text ? { text, basis: 'author' as const } : null;
@@ -209,6 +209,22 @@ export async function toDetail(row: FeedRow) {
     assetContext: idea.context,
     leverageReason: route.pipeline?.explanation ?? null,
     leverageSteps: route.pipeline?.steps ?? [],
+    invalidatingThesis: invalidatingRow ? {
+      id: invalidatingRow.idea.id,
+      thesis: invalidatingRow.idea.thesis,
+      direction: invalidatingRow.route.direction,
+      conviction: invalidatingRow.idea.conviction,
+      postedAt: invalidatingRow.idea.postedAt,
+      text: invalidatingRow.post?.text ?? invalidatingRow.idea.headlineQuote,
+      sourceUrl: invalidatingRow.post
+        ? `https://x.com/${invalidatingRow.idea.authorHandle}/status/${invalidatingRow.post.tweetId}`
+        : null,
+      author: {
+        handle: invalidatingRow.idea.authorHandle,
+        name: invalidatingRow.source?.name ?? invalidatingRow.idea.authorHandle,
+        avatarUrl: `https://unavatar.io/x/${invalidatingRow.idea.authorHandle}`,
+      },
+    } : null,
     plan,
     recommendedSetup: {
       side: route.direction,

@@ -280,6 +280,12 @@ export function computeVals(state, actions) {
       t_assetContext: d?.assetContext || '',
       t_leverageReason: d?.leverageReason || '',
       t_leverageSteps: d?.leverageSteps ?? [],
+      t_invalidatingThesis: d?.invalidatingThesis ? {
+        ...d.invalidatingThesis,
+        directionLabel: dirWord(d.invalidatingThesis.direction).toUpperCase(),
+        directionColor: dirColor(d.invalidatingThesis.direction),
+        age: timeAgo(d.invalidatingThesis.postedAt),
+      } : null,
       // trade rail
       orderSide, orderTicker: sel.ticker, orderPrice: priceErr ? '—' : fmtPrice(sel.currentPrice),
       recommendedSetupTags: setup ? [
