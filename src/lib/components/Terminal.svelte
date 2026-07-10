@@ -208,7 +208,7 @@
   .thesis-header { position: relative; }
   .thesis-header > div { display: flex; align-items: center; gap: 10px; }
   .thesis-header h1 { max-width: 68ch; margin: 12px 0 0; color: #EAE9E4; font-size: 22px; font-weight: 550; letter-spacing: -0.018em; line-height: 1.45; text-wrap: pretty; }
-  .thesis-star { border: 0; background: transparent; padding: 2px; color: #50525A; font-size: 19px; line-height: 1; cursor: pointer; }
+  .thesis-star { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: rgba(255,255,255,.035); padding: 0; color: #50525A; font-size: 28px; line-height: 1; cursor: pointer; }
   .thesis-star:hover, .thesis-star:focus-visible, .thesis-star.starred { outline: 0; color: #D8B87E; }
   .conviction-badge { display: inline-block; border: 1px solid; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; text-transform: lowercase; }
   .brief-section { margin-top: 30px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.08); }
