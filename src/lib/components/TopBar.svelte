@@ -1,4 +1,5 @@
 <script>
+  import { Plus, Search, TrendingDown, TrendingUp } from '@lucide/svelte';
   let { vals } = $props();
 </script>
 
@@ -8,7 +9,7 @@
   {#if vals.showSearch}
     <div class="search-wrap">
       <div class="search-field hov hov-border">
-        <span class="search-icon" aria-hidden="true">⌕</span>
+        <Search class="search-icon" size={15} aria-hidden="true" />
         <input value={vals.query} oninput={vals.onSearch} placeholder="Search for tokens or traders…" aria-label="Search for tokens or traders" />
         <span class="search-key">Paste</span>
         <span class="search-key">/</span>
@@ -24,9 +25,9 @@
     <div class="portfolio-card">
       <button class="portfolio-value hov hov-op" type="button" onclick={vals.togglePortfolio}>
         <span>{vals.totalFmt}</span>
-        <span class="pnl" style="background:{vals.upnlBg}; color:{vals.upnlColor}">{vals.upnlArrow} {vals.upnlPctFmt}</span>
+        <span class="pnl" style="background:{vals.upnlBg}; color:{vals.upnlColor}">{#if vals.upnlPositive}<TrendingUp size={12} aria-hidden="true" />{:else}<TrendingDown size={12} aria-hidden="true" />{/if}{vals.upnlPctFmt}</span>
       </button>
-      <button class="portfolio-add hov hov-bright" type="button" aria-label="Open portfolio" onclick={vals.togglePortfolio}>+</button>
+      <button class="portfolio-add hov hov-bright" type="button" aria-label="Open portfolio" onclick={vals.togglePortfolio}><Plus size={18} strokeWidth={2.4} aria-hidden="true" /></button>
     </div>
     <div class="avatar" aria-label="Account AK">AK</div>
   </div>
@@ -39,7 +40,7 @@
   .search-wrap { display: flex; min-width: 0; flex: 1; justify-content: center; }
   .search-field { display: flex; width: 100%; max-width: 900px; height: 40px; align-items: center; gap: 10px; padding: 0 12px 0 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; background: #0F1116; }
   .search-field:focus-within { border-color: rgba(216,184,126,0.6); }
-  .search-icon { color: #55575E; font-size: 15px; }
+  .search-field :global(.search-icon) { flex-shrink: 0; color: #55575E; }
   .search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #E7E6E2; font-size: 14px; }
   .search-key { padding: 3px 8px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: #191B21; color: #9A9CA3; font-size: 11px; font-weight: 600; }
   .spacer { flex: 1; }
@@ -49,7 +50,7 @@
   .portfolio-card { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; background: #101218; }
   .portfolio-value { display: flex; align-items: center; gap: 9px; padding: 2px 4px 2px 10px; border: 0; background: transparent; color: #E7E6E2; cursor: pointer; }
   .portfolio-value > span:first-child { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
-  .pnl { border-radius: 7px; padding: 5px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; }
+  .pnl { display: inline-flex; align-items: center; gap: 4px; border-radius: 7px; padding: 5px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; }
   .portfolio-add { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; flex-shrink: 0; border: 0; border-radius: 8px; background: #4D9FEB; color: #0A0B0D; font-size: 19px; font-weight: 600; line-height: 1; cursor: pointer; }
   .avatar { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg,#E3A75A,#D8865A); color: #0A0B0D; font-size: 12px; font-weight: 700; }
   .portfolio-value:focus-visible, .portfolio-add:focus-visible { outline: 2px solid #D8B87E; outline-offset: 2px; }

@@ -1,4 +1,5 @@
 <script>
+  import { Check, ChevronDown, RefreshCw, Star } from '@lucide/svelte';
   let { vals } = $props();
   let horizonOpen = $state(false);
   let selectedHorizon = $derived(vals.horizonOptions.find((option) => option.selected) ?? vals.horizonOptions[0]);
@@ -27,11 +28,7 @@
         <button class="filter-trigger" type="button" aria-label="Horizon" aria-haspopup="listbox" aria-expanded={horizonOpen}
           onclick={() => horizonOpen = !horizonOpen} onkeydown={handleHorizonKeydown}>
           <span>{selectedHorizon.label}</span>
-          <span class:open={horizonOpen} class="select-chevron" aria-hidden="true">
-            <svg viewBox="0 0 16 16" focusable="false">
-              <path d="m4 6 4 4 4-4" />
-            </svg>
-          </span>
+          <span class:open={horizonOpen} class="select-chevron" aria-hidden="true"><ChevronDown size={13} /></span>
         </button>
         {#if horizonOpen}
           <div class="filter-menu" role="listbox" aria-label="Horizon options">
@@ -39,14 +36,14 @@
               <button type="button" role="option" aria-selected={option.selected} class:selected={option.selected}
                 onclick={() => { option.onClick(); horizonOpen = false; }}>
                 <span>{option.menuLabel}</span>
-                {#if option.selected}<span aria-hidden="true">✓</span>{/if}
+                {#if option.selected}<Check size={13} aria-hidden="true" />{/if}
               </button>
             {/each}
           </div>
         {/if}
       </div>
       <button class="refresh-button hov hov-text" type="button" aria-label="Refresh ideas" title="Refresh ideas" onclick={vals.refreshFeed} disabled={vals.refreshing}>
-        <span aria-hidden="true">↻</span>
+        <RefreshCw size={15} aria-hidden="true" />
       </button>
     </div>
   </header>
@@ -103,7 +100,7 @@
           </button>
           <div class="idea-foot">
             <div class="idea-meta">
-              <button class:starred={idea.starred} class="feed-star" type="button" aria-label={idea.starred ? `Unstar ${idea.market} thesis` : `Star ${idea.market} thesis`} aria-pressed={idea.starred} onclick={idea.toggleStar}>★</button>
+              <button class:starred={idea.starred} class="feed-star" type="button" aria-label={idea.starred ? `Unstar ${idea.market} thesis` : `Star ${idea.market} thesis`} aria-pressed={idea.starred} onclick={idea.toggleStar}><Star size={21} fill={idea.starred ? 'currentColor' : 'none'} aria-hidden="true" /></button>
               <span>{idea.tweetCount} tweet{idea.tweetCount === 1 ? '' : 's'} · {idea.age}</span>
             </div>
             <div class="quick-entry" aria-label={`Quick ${idea.dirLabel.toLowerCase()} ${idea.market} entry`}>
@@ -125,7 +122,6 @@
   .filters { display: flex; min-width: 0; justify-content: space-between; gap: 2px; }
   .filters button { border: 0; border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer; }
   .refresh-button { display: flex; width: 36px; height: 31px; align-items: center; justify-content: center; flex-shrink: 0; margin-left: auto; padding: 0; border: 0; border-left: 1px solid rgba(255,255,255,0.07); background: transparent; color: #777981; cursor: pointer; }
-  .refresh-button span { font-size: 14px; line-height: 1; }
   .refresh-button:disabled { opacity: 0.45; cursor: wait; }
   .filter-toolbar { display: flex; width: 100%; min-width: 0; align-items: center; margin-top: 10px; border: 1px solid rgba(255,255,255,0.09); border-radius: 7px; background: #111318; }
   .filter-label { padding-left: 10px; color: #60626A; font-size: 9px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; }
@@ -133,7 +129,6 @@
   .filter-control > span:first-child { padding: 0 8px; color: #6F7179; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
   .filter-trigger { display: flex; width: 82px; height: 29px; align-items: center; justify-content: space-between; border: 0; border-left: 1px solid rgba(255,255,255,0.07); background: transparent; padding: 0 8px 0 9px; color: #D8B87E; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; cursor: pointer; }
   .select-chevron { display: flex; width: 14px; height: 14px; align-items: center; justify-content: center; color: #7B7D85; transition: transform 0.16s ease; }
-  .select-chevron svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   .select-chevron.open { transform: rotate(180deg); }
   .filter-menu { position: absolute; top: calc(100% + 7px); left: 0; width: 230px; overflow: hidden; border: 1px solid rgba(255,255,255,0.11); border-radius: 9px; background: #14161B; box-shadow: 0 14px 32px rgba(0,0,0,0.48); }
   .filter-menu button { display: flex; width: 100%; align-items: center; justify-content: space-between; border: 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: transparent; padding: 9px 11px; color: #A7A9B0; font-size: 11px; text-align: left; cursor: pointer; }

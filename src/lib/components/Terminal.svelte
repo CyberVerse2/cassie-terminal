@@ -1,11 +1,12 @@
 <script>
+  import { ArrowLeft, ArrowRight, ExternalLink, Star } from '@lucide/svelte';
   import TvChart from './TvChart.svelte';
   let { vals } = $props();
 </script>
 
 <div class="terminal-scroll">
   {#if vals.showBack}
-    <button class="back-button hov hov-text" type="button" onclick={vals.backToFeed}>← The Desk</button>
+    <button class="back-button hov hov-text" type="button" onclick={vals.backToFeed}><ArrowLeft size={14} aria-hidden="true" />The Desk</button>
   {/if}
 
   {#if vals.hasSel}
@@ -44,7 +45,7 @@
           </div>
         </a>
         {#if vals.t_sourceUrl}
-          <a href={vals.t_sourceUrl} target="_blank" rel="noreferrer" class="source-link hov hov-underline">View post ↗</a>
+          <a href={vals.t_sourceUrl} target="_blank" rel="noreferrer" class="source-link hov hov-underline">View post <ExternalLink size={12} aria-hidden="true" /></a>
         {/if}
       </div>
 
@@ -88,7 +89,7 @@
           <header class="thesis-header">
             <div>
               <span class="conviction-badge" style="color:{vals.t_convColor}; border-color:{vals.t_convBd}">{vals.t_conviction} conviction</span>
-              <button class:starred={vals.t_starred} class="thesis-star" type="button" aria-label={vals.t_starred ? 'Unstar this thesis' : 'Star this thesis'} aria-pressed={vals.t_starred} onclick={vals.t_toggleStar}>★</button>
+              <button class:starred={vals.t_starred} class="thesis-star" type="button" aria-label={vals.t_starred ? 'Unstar this thesis' : 'Star this thesis'} aria-pressed={vals.t_starred} onclick={vals.t_toggleStar}><Star size={28} fill={vals.t_starred ? 'currentColor' : 'none'} aria-hidden="true" /></button>
             </div>
             <h1>{vals.t_thesis}</h1>
           </header>
@@ -121,7 +122,7 @@
                 </div>
                 <h3>{vals.t_invalidatingThesis.thesis}</h3>
                 <p>{vals.t_invalidatingThesis.text}</p>
-                <span class="counter-open">Open thesis →</span>
+                <span class="counter-open">Open thesis <ArrowRight size={13} aria-hidden="true" /></span>
               </button>
             </section>
           {/if}
@@ -166,7 +167,7 @@
 
 <style>
   .terminal-scroll { min-width: 0; min-height: 0; overflow-y: auto; padding: clamp(16px, 1.4vw, 28px) clamp(20px, 1.8vw, 36px) 72px; }
-  .back-button { margin: 0 0 12px; padding: 0; border: 0; background: none; color: #9A9CA3; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .back-button { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 0; border: 0; background: none; color: #9A9CA3; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
   .idea-view { width: 100%; animation: fadeUp 0.22s ease both; }
   .market-summary { display: flex; align-items: stretch; overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: #0C0E12; }
   .market-identity { display: flex; min-width: 190px; align-items: center; gap: 11px; padding: 12px 18px; border-right: 1px solid rgba(255,255,255,0.07); }
@@ -185,7 +186,7 @@
   .author-name { color: #E1E1DE; font-size: 13px; font-weight: 600; }
   .author-name span { color: #777981; font-weight: 400; }
   .author-stats { margin-top: 2px; overflow: hidden; color: #92949B; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
-  .source-link { flex-shrink: 0; color: #63A9E8; font-size: 12px; font-weight: 600; text-decoration: none; }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; color: #63A9E8; font-size: 12px; font-weight: 600; text-decoration: none; }
   .tweet-group { margin-top: 14px; }
   .tweet-group-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 7px; }
   .tweet-group-head h2 { margin: 0; color: #D8D9D5; font-size: 11px; font-weight: 650; }
@@ -227,7 +228,7 @@
   .counter-source b { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .06em; }
   .counter-thesis h3 { margin: 15px 0 0; color: #E5E4DF; font-size: 17px; line-height: 1.4; }
   .counter-thesis p { max-width: 76ch; margin: 8px 0 0; color: #AEB0B7; font-size: 14px; line-height: 1.55; }
-  .counter-open { display: inline-block; margin-top: 13px; color: #D8B87E; font-size: 11px; font-weight: 650; }
+  .counter-open { display: inline-flex; align-items: center; gap: 5px; margin-top: 13px; color: #D8B87E; font-size: 11px; font-weight: 650; }
   .asset-lever-grid { display: grid; max-width: 960px; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
   .asset-lever-grid > div, .exposure-chain { border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; background: #0D0F13; padding: 16px 18px; }
   .asset-lever h3 { margin: 0; color: #8F9198; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
