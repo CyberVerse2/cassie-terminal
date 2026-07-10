@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The alpha-directed trade brief</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0a0b0d; color: #e7e6e2; }
+    body { max-width: 800px; margin: 0 auto; padding: 48px 24px 72px; }
+    h1 { font-size: 34px; letter-spacing: -0.035em; }
+    h2 { margin-top: 40px; font-size: 19px; }
+    p, li { color: #b8bac1; line-height: 1.68; }
+    a { color: #d8b87e; }
+    code { color: #8fc3ed; }
+    pre { overflow-x: auto; padding: 18px; border: 1px solid #292b31; border-radius: 12px; background: #111318; color: #cdd7df; }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 18px; border: 1px solid #292b31; border-radius: 12px; background: #111318; }
+    .flow span { padding: 7px 10px; border-radius: 7px; background: #1a1c22; font-size: 13px; }
+    .flow b { color: #767880; }
+    .quiz { margin-top: 14px; padding: 18px; border: 1px solid #292b31; border-radius: 12px; background: #111318; }
+    .quiz button { display: block; width: 100%; margin-top: 8px; padding: 10px 12px; border: 1px solid #363941; border-radius: 8px; background: #17191f; color: #d8d9de; text-align: left; cursor: pointer; }
+    .quiz button:hover, .quiz button:focus-visible { border-color: #d8b87e; outline: none; }
+    .feedback { min-height: 24px; margin: 10px 0 0; color: #d8b87e; }
+  </style>
+</head>
+<body>
+  <a href="index.html">← Learning docs</a>
+  <h1>The alpha-directed trade brief</h1>
+  <p>The selected-idea view answers one question: is this routed trade worth taking now? Every primary field must change confidence, timing, payoff, invalidation, or sizing.</p>
+
+  <h2>System map</h2>
+  <p><code>serialize.ts</code> owns the decision contract. <code>trade-groups.ts</code> groups routed tweets by asset, venue, instrument, and direction. <code>logic.js</code> formats those groups and applies search plus horizon filtering. <code>Feed.svelte</code> renders each group as a collective tweet card with the best-performing source call as its representative excerpt and compact immediate-entry amounts. <code>Terminal.svelte</code> opens that representative call for chart and brief analysis and presents all source tweets as short, one-line tiles in a horizontal scroll-snap carousel when the trade has multiple contributors. <code>TradeRail.svelte</code> retains the full sizing workflow.</p>
+
+  <h2>Detail contract</h2>
+  <pre><code>{
+  "thesis": "...",
+  "alphaDrivers": ["...", "...", "..."],
+  "plan": {
+    "target": { "text": "...", "basis": "author | suggested" },
+    "stop": { "text": "...", "basis": "author | suggested" },
+    "horizon": { "text": "...", "basis": "author | suggested" }
+  },
+  "recommendedSetup": {
+    "side": "long | short | yes | no",
+    "entry": { "type": "market" },
+    "target": { "text": "...", "basis": "author | suggested" },
+    "stop": { "text": "...", "basis": "author | suggested" },
+    "horizon": { "text": "...", "basis": "author | suggested" },
+    "complete": true,
+    "missing": []
+  },
+  "resolution": {
+    "resolutionDate": "...",
+    "resolutionCriteria": "..."
+  }
+}</code></pre>
+  <p>The normalized strategy supplies target, stop, and horizon values. Prediction ideas also include their resolution date and criteria. Missing values remain visibly marked as missing.</p>
+
+  <h2>Normalized horizons</h2>
+  <pre><code>z.enum([
+  "immediate",
+  "short-term",
+  "medium-term",
+  "long-term",
+  "unspecified"
+])</code></pre>
+  <p>The indexer classifies each extracted trade idea into this shared enum. The terminal filters the stored value exactly through a custom Horizon menu in the Desk filter toolbar. The trigger shows the compact selected value while the menu spells out each timeframe and marks the current selection. Each option retains one stable meaning: same session to three days, four days to four weeks, more than four weeks to six months, more than six months, or unspecified when timing cannot be determined. New filters join this toolbar as labeled controls instead of creating additional wrapping chip rows.</p>
+
+  <h2>Decision flow</h2>
+  <div class="flow" aria-label="Trade brief sequence">
+    <span>Find and filter</span><b>→</b><span>Market state</span><b>→</b><span>Chart context</span><b>→</b><span>Source quality</span><b>→</b><span>Thesis</span><b>→</b><span>Alpha drivers</span><b>→</b><span>Trade plan</span><b>→</b><span>Position size</span>
+  </div>
+
+  <h2>Posted-time chart annotation</h2>
+  <p><code>GET /api/ideas/:id/bars</code> loads a venue-native series: Alpaca IEX OHLC for equities, Hyperliquid candles for perps, CoinGecko OHLC for tokens, and Polymarket CLOB probability history for prediction markets. A Polymarket condition ID is resolved through Gamma to the routed Yes or No outcome token; that token is then used for both CLOB history and the public market WebSocket. Missing credentials, provider failures, unresolved outcome tokens, and empty histories surface as chart errors.</p>
+  <p><code>TvChart.svelte</code> renders financial instruments as candles and prediction markets as a probability area series. It inserts the source post's Unix timestamp into the chart's own time scale as a whitespace point, then obtains the horizontal coordinate from <code>timeToCoordinate</code>. The author avatar is positioned vertically at the recorded entry price, or the nearest series value when an entry is unavailable. The marker therefore remains attached to the trade event when the chart is resized, panned, or zoomed.</p>
+  <p>The post is progressive disclosure rather than permanent chart obstruction. Its circular author marker is keyboard focusable and toggles the compact post card; Escape closes the card. The card opens above or below its marker according to available chart space.</p>
+  <p>The chart has no separate title strip. Its available timeframes appear in a bottom control rail, and selecting one requests matching venue fidelity before rebuilding the chart and reattaching the post marker. Polymarket probabilities remain values from zero to one in the API and are formatted as percentages only at the chart boundary.</p>
+  <p>The visible chart chrome is limited to decision-relevant information: ticker, timeframe, price action, volume, and the source post. Provider names, synchronization status, and data-pipeline descriptions stay out of the product surface.</p>
+
+  <h2>Decision criteria</h2>
+  <p>The primary brief contains market state, chart context, source quality, thesis, alpha drivers, payoff, invalidation, horizon, and position sizing. Search and category or horizon filters reduce the candidate set before the brief is evaluated. Each field must change confidence, timing, expected payoff, risk, or size.</p>
+
+  <h2>Paper order sidebar</h2>
+  <p>The order sidebar keeps the full sizing path visible without turning the recommendation into a second trade brief. A compact setup strip exposes side, entry type, normalized horizon, and the apply action; target and stop remain available under an optional disclosure. Applying stores the normalized setup itself on the paper position, so it survives amount selection and placement. The entry price is read from the selected instrument at placement rather than frozen in the recommendation. The user still chooses the dollar amount because textual invalidations are not converted into numeric risk without a structured executable stop. Changing the side after applying the setup explicitly detaches it. The panel does not invent a venue fee when the route does not provide one.</p>
+  <p>The global navigation remains a single row across wide, tablet, and phone widths: search flexes into available space, shortcut hints and low-priority status disappear before they can cause overflow, and account controls progressively compact. The feed header pairs category filters with an explicit refresh action; refreshing preserves the active tab and selected idea while requesting the latest routed cards and feed status.</p>
+
+  <h2>Equity price boundary</h2>
+  <p><code>venues/alpaca.ts</code> owns US equity pricing and historical bars. The explicit <code>ALPACA_ENV</code> setting selects matching sandbox or live authentication and data endpoints. The adapter exchanges Broker client credentials for a short-lived OAuth bearer token, reuses that token until shortly before expiration, coalesces concurrent card lookups into one multi-symbol latest-trades request, and loads raw historical bars from Alpaca's IEX feed. Successful symbol prices are cached for 30 seconds. Missing credentials, authentication failures, request failures, and symbols without IEX data remain explicit errors; they do not silently switch environments, providers, or substitute a previous close.</p>
+
+  <h2>Responsive behavior</h2>
+  <p>Wide screens show the idea feed, chart-backed trade brief, and sizing rail together. The side rails grow within bounded widths while the center workspace consumes the remaining space; its summary, chart, and plan are fluid, while prose retains readable line lengths. The sidebar begins directly with category tabs and horizon chips in two compact rows. Feed freshness lives in the global top bar and hides on narrow screens where space is constrained. Compact screens show all three market facts in a two-row summary, followed by the chart, source, thesis, drivers, and plan.</p>
+
+  <h2>Verification</h2>
+  <ul>
+    <li><code>npm run build</code> verifies the SvelteKit client, server, and normalized API contract compile.</li>
+    <li><code>bunx tsc --noEmit</code> verifies the indexer extraction schema and horizon backfill compile.</li>
+    <li>The one-time backfill classified all 157 existing ideas into the Zod enum before updating them in one transaction.</li>
+    <li>Live Hyperliquid and equity ideas verified target, stop, horizon, provenance, and explicit live-price failures.</li>
+    <li>The chart endpoint returned 282 Alpaca/IEX bars for USO and 1,441 Hyperliquid bars for the GOOGL perp.</li>
+    <li>The Polymarket chart endpoint resolved the selected Yes token, returned 1,438 probability points at 30-minute fidelity, and exposed the matching public market stream.</li>
+    <li>Browser checks verified a rendered Polymarket probability series, exact posted-time author marker, live-stream connection, and functional timeframe selection without console errors.</li>
+    <li>Browser checks verified the post label, mini-tweet, responsive layout, and clean chart rendering without implementation metadata.</li>
+  </ul>
+
+  <h2>Quiz</h2>
+  <div class="quiz" data-answer="b">
+    <strong>Where should target normalization happen?</strong>
+    <button data-choice="a">Inside Terminal.svelte</button>
+    <button data-choice="b">Inside serialize.ts</button>
+    <button data-choice="c">Inside the trade amount input</button>
+    <p class="feedback" aria-live="polite"></p>
+  </div>
+  <div class="quiz" data-answer="c">
+    <strong>What keeps the posted marker aligned during chart zooming?</strong>
+    <button data-choice="a">A percentage of the browser width</button>
+    <button data-choice="b">The post's age label</button>
+    <button data-choice="c">The post timestamp on the chart's own time scale</button>
+    <p class="feedback" aria-live="polite"></p>
+  </div>
+  <div class="quiz" data-answer="a">
+    <strong>What should happen when no stop is available?</strong>
+    <button data-choice="a">Show that the stop is missing</button>
+    <button data-choice="b">Hide the entire trade plan</button>
+    <button data-choice="c">Invent a percentage stop in the browser</button>
+    <p class="feedback" aria-live="polite"></p>
+  </div>
+  <div class="quiz" data-answer="c">
+    <strong>Which information belongs in the primary brief?</strong>
+    <button data-choice="a">Extractor model name</button>
+    <button data-choice="b">Every alternative venue</button>
+    <button data-choice="c">The invalidation condition</button>
+    <p class="feedback" aria-live="polite"></p>
+  </div>
+  <div class="quiz" data-answer="b">
+    <strong>How should the Desk apply a horizon filter?</strong>
+    <button data-choice="a">Infer timing from the post text in the browser</button>
+    <button data-choice="b">Match the stored normalized enum exactly</button>
+    <button data-choice="c">Group horizons by keyword overlap</button>
+    <p class="feedback" aria-live="polite"></p>
+  </div>
+
+  <script>
+    document.querySelectorAll('.quiz').forEach((quiz) => {
+      quiz.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-choice]');
+        if (!button) return;
+        const correct = button.dataset.choice === quiz.dataset.answer;
+        quiz.querySelector('.feedback').textContent = correct
+          ? 'Correct. That keeps the decision contract explicit.'
+          : 'Not quite. Revisit the contract and primary-view boundary above.';
+      });
+    });
+  </script>
+</body>
+</html>

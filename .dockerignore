@@ -1,0 +1,9 @@
+.env
+.env.*
+.git
+.svelte-kit
+artifacts
+build
+node_modules
+npm-debug.log*
+video

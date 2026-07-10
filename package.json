@@ -1,0 +1,32 @@
+{
+  "name": "cassie-terminal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node build",
+    "video:studio": "remotion studio video/index.tsx",
+    "video:audio": "python3 video/synth.py",
+    "video:render": "npm run video:audio && remotion render video/index.tsx CassieLaunch artifacts/launch-video/cassie-launch.mp4 --codec=h264 --crf=16",
+    "video:frames": "remotion still video/index.tsx CassieLaunch artifacts/launch-video/review-frame.png --frame=1140"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.487",
+    "@sveltejs/adapter-node": "^5.2.9",
+    "@sveltejs/kit": "^2.8.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.487",
+    "svelte": "^5.1.0",
+    "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.0",
+    "lightweight-charts": "^5.2.0",
+    "postgres": "^3.4.5"
+  }
+}

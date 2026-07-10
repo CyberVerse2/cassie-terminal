@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cassie learning docs</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0a0b0d; color: #e7e6e2; }
+    body { max-width: 760px; margin: 0 auto; padding: 48px 24px; }
+    h1 { font-size: 32px; letter-spacing: -0.03em; }
+    h2 { margin-top: 36px; font-size: 18px; }
+    p, li { color: #b8bac1; line-height: 1.65; }
+    a { color: #d8b87e; }
+    .map { display: grid; gap: 8px; padding: 16px; border: 1px solid #292b31; border-radius: 12px; background: #111318; }
+    code { color: #8fc3ed; }
+  </style>
+</head>
+<body>
+  <h1>Cassie learning docs</h1>
+  <p>A practical map of the terminal, its decision flows, and the verification patterns used to keep them reliable.</p>
+
+  <h2>Codebase map</h2>
+  <div class="map">
+    <div><code>src/routes</code>: page composition and read API endpoints</div>
+    <div><code>src/lib/components</code>: search, filtered desk, synchronized venue chart, trade brief, trade rail, and portfolio UI</div>
+    <div><code>src/lib/logic.js</code>: API-to-view-model transforms, exact horizon filtering, search, and paper-trade calculations</div>
+    <div><code>src/lib/server</code>: feed queries, serialization, database access, live prices, and historical venue bars</div>
+    <div><code>video</code>: deterministic Remotion launch-film composition and synthesized soundtrack</div>
+  </div>
+
+  <h2>Product workflows</h2>
+  <ul>
+    <li><a href="trade-brief.html">The alpha-directed trade brief</a>: the normalized decision contract and its UI flow.</li>
+    <li><a href="desk-admission.html">The Desk selection contract</a>: how routed Cassie calls become a concise opportunity set.</li>
+    <li><a href="launch-film.html">The Cassie launch film</a>: the coded motion system, timing, audio, and render verification.</li>
+  </ul>
+
+  <h2>Recommended reading path</h2>
+  <ol>
+    <li>Read the root <code>README.md</code> for the system boundary between the indexer and terminal.</li>
+    <li>Read the trade brief page for the main trader workflow.</li>
+    <li>Read the Desk admission page for feed selection, ordering, and deduplication.</li>
+    <li>Inspect <code>logic.js</code> before changing data presentation or paper-trade behavior.</li>
+    <li>Read the launch-film page before changing product storytelling or motion assets.</li>
+  </ol>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Desk selection contract</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0a0b0d; color: #e7e6e2; }
+    body { max-width: 780px; margin: 0 auto; padding: 48px 24px; }
+    h1 { font-size: 32px; letter-spacing: -0.03em; }
+    h2 { margin-top: 36px; font-size: 18px; }
+    p, li { color: #b8bac1; line-height: 1.65; }
+    a { color: #d8b87e; } code { color: #8fc3ed; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border: 1px solid #292b31; text-align: left; }
+    button { margin: 4px 6px 4px 0; padding: 8px 10px; border: 1px solid #383b43; border-radius: 6px; background: #15171c; color: inherit; cursor: pointer; }
+    .feedback { min-height: 24px; color: #d8b87e; }
+  </style>
+</head>
+<body>
+  <p><a href="index.html">← Learning docs</a></p>
+  <h1>The Desk selection contract</h1>
+  <p>The Desk is a concise opportunity set of Cassie calls, not a transcript of every routed post.</p>
+
+  <h2>System map</h2>
+  <p>The indexer produces routed Cassie calls and stores them on <code>trade_ideas</code> and <code>routes</code>. Once routed, every idea has the same product status. Pipeline metadata such as <code>stated_by_author</code> and <code>trade_type</code> must never filter, rank, label, or explain calls in the terminal.</p>
+
+  <h2>Selection and ordering</h2>
+  <table>
+    <thead><tr><th>Stage</th><th>Rule</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Select</td><td><code>routes.status = routed</code></td><td>Include every Cassie call that has a tradable route.</td></tr>
+      <tr><td>Order</td><td>High, medium, then low conviction; newest first within each tier.</td><td>Put stronger pipeline judgments first.</td></tr>
+      <tr><td>Collapse</td><td>One row per normalized ticker and direction.</td><td>Prevent repeated coverage from crowding out distinct trades.</td></tr>
+      <tr><td>Price</td><td>Only the selected rows receive live venue requests.</td><td>Keep feed latency proportional to what the user sees.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Example</h2>
+  <p>Five long USO calls compete for one <code>USO:long</code> slot. The highest-conviction, newest call represents that opportunity. A USO short remains separate because it is a different trade.</p>
+
+  <h2>Verification</h2>
+  <p>Build verification checks the query and response types. Runtime verification checks that pipeline classifications do not affect inclusion, ticker-direction keys are unique, and the returned set respects the requested limit.</p>
+
+  <h2>Quiz</h2>
+  <p>Which calls should appear when three sources produce the same routed long opportunity?</p>
+  <button data-answer="wrong">All three posts</button>
+  <button data-answer="right">One representative opportunity</button>
+  <button data-answer="wrong">The oldest post</button>
+  <p class="feedback" aria-live="polite"></p>
+  <script>
+    const feedback = document.querySelector('.feedback');
+    document.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
+      feedback.textContent = button.dataset.answer === 'right'
+        ? 'Correct. Repetition must not displace distinct opportunities.'
+        : 'Try again: The Desk optimizes for distinct, actionable trades.';
+    }));
+  </script>
+</body>
+</html>
