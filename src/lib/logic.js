@@ -369,7 +369,10 @@ export function computeVals(state, actions) {
     closeTrade: () => setState({ tradeOpen: false }),
     backToFeed: () => setState({ mobileScreen: 'feed' }),
     portfolioOpen: S.portfolioOpen,
-    togglePortfolio: () => setState((s) => ({ portfolioOpen: !s.portfolioOpen })),
+    togglePortfolio: () => setState((s) => {
+      const portfolioOpen = !s.portfolioOpen;
+      return { portfolioOpen, ...(portfolioOpen ? { tradeOpen: false } : {}) };
+    }),
     resetTrade: () => setState({ placed: false, amount: '', appliedSetup: null }),
     feedItems, filterTabs, horizonOptions, horizonValue: S.horizon,
     onHorizonChange: (e) => actions.setHorizon(e.currentTarget.value),
