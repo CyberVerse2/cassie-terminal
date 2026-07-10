@@ -88,14 +88,6 @@ function convictionTier(c) {
   return { word: 'MEDIUM', color: '#C9CBD2', bd: 'rgba(201,203,210,0.3)' }; // medium or null
 }
 const iconText = (ticker) => (ticker || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase();
-const PLAN_BASIS = {
-  author: { label: 'author', color: '#5FC98C', bg: 'rgba(55,184,125,0.12)' },
-  suggested: { label: 'suggested', color: '#9A9CA3', bg: 'rgba(255,255,255,0.06)' },
-  observed: { label: 'at post', color: '#7FB4E8', bg: 'rgba(77,159,235,0.12)' },
-  market: { label: 'market rules', color: '#7FB4E8', bg: 'rgba(77,159,235,0.12)' },
-  missing: { label: 'missing', color: '#E87970', bg: 'rgba(224,96,85,0.10)' },
-};
-
 // ---------- paper-portfolio math ----------
 function posCalc(p) {
   return { val: p.currentValueUsd, pnl: p.pnlUsd };
@@ -247,28 +239,6 @@ export function computeVals(state, actions) {
     else if (au) authorLine = `${au.routed} trade idea${au.routed === 1 ? '' : 's'} tracked`;
     else authorLine = 'track record loading…';
 
-    const planRow = (label, component, basis = null) => {
-      const resolvedBasis = component?.text ? basis || component.basis || 'missing' : 'missing';
-      const meta = PLAN_BASIS[resolvedBasis] || PLAN_BASIS.missing;
-      return {
-        label,
-        text: component?.text || 'Not specified',
-        basisLabel: meta.label,
-        basisColor: meta.color,
-        basisBg: meta.bg,
-      };
-    };
-    const planRows = d ? [
-      planRow('Call entry', { text: fmtPrice(sel.entryPrice) }, 'observed'),
-      planRow('Target', d.plan?.target),
-      planRow('Stop', d.plan?.stop),
-      planRow('Horizon', d.plan?.horizon),
-      ...(d.resolution ? [
-        planRow('Resolves', { text: d.resolution.resolutionDate }, 'market'),
-        planRow('Criteria', { text: d.resolution.resolutionCriteria }, 'market'),
-      ] : []),
-    ] : [];
-
     term = {
       t_ticker: sel.ticker, t_venueTag: sel.venueLabel, t_instrument: sel.instrument,
       t_chartIdeaId: ['stocks', 'perps', 'tokens', 'markets'].includes(sel.category) ? sel.id : null,
@@ -307,7 +277,9 @@ export function computeVals(state, actions) {
       // detail state
       t_detailLoading: S.detailLoading, t_detailError: S.detailError,
       t_thesis: d?.thesis || '', t_alphaDrivers: d?.alphaDrivers ?? [],
-      t_planRows: planRows,
+      t_assetContext: d?.assetContext || '',
+      t_leverageReason: d?.leverageReason || '',
+      t_leverageSteps: d?.leverageSteps ?? [],
       // trade rail
       orderSide, orderTicker: sel.ticker, orderPrice: priceErr ? '—' : fmtPrice(sel.currentPrice),
       recommendedSetupTags: setup ? [

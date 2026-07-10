@@ -104,18 +104,38 @@
             </section>
           {/if}
 
-          <section class="brief-section">
-            <h2>Trade plan</h2>
-            <div class="plan-table">
-              {#each vals.t_planRows as row}
-                <div class="plan-row">
-                  <span class="plan-label">{row.label}</span>
-                  <span class="plan-value">{row.text}</span>
-                  <span class="basis-badge" style="color:{row.basisColor}; background:{row.basisBg}">{row.basisLabel}</span>
+          {#if vals.t_assetContext || vals.t_leverageReason || vals.t_leverageSteps.length}
+            <section class="brief-section asset-lever">
+              <h2>Why this asset</h2>
+              <div class="asset-lever-grid">
+                {#if vals.t_assetContext}
+                  <div>
+                    <h3>What you're trading</h3>
+                    <p>{vals.t_assetContext}</p>
+                  </div>
+                {/if}
+                {#if vals.t_leverageReason}
+                  <div>
+                    <h3>Why it expresses the narrative</h3>
+                    <p>{vals.t_leverageReason}</p>
+                  </div>
+                {/if}
+              </div>
+              {#if vals.t_leverageSteps.length}
+                <div class="exposure-chain">
+                  <h3>Exposure chain</h3>
+                  <ol>
+                    {#each vals.t_leverageSteps as step}
+                      <li>
+                        <span>{step.basis}</span>
+                        <p>{step.text}</p>
+                      </li>
+                    {/each}
+                  </ol>
                 </div>
-              {/each}
-            </div>
-          </section>
+              {/if}
+            </section>
+          {/if}
         </article>
       {/if}
     </div>
@@ -172,11 +192,15 @@
   .driver-row { display: flex; align-items: flex-start; gap: 12px; }
   .driver-row > span { width: 6px; height: 6px; margin-top: 9px; flex-shrink: 0; border-radius: 50%; background: #D8B87E; }
   .driver-row p { max-width: 70ch; margin: 0; color: #C4C6CC; font-size: 15px; line-height: 1.6; text-wrap: pretty; }
-  .plan-table { border-top: 1px solid rgba(255,255,255,0.08); }
-  .plan-row { display: grid; grid-template-columns: 94px minmax(0,1fr) auto; gap: 16px; align-items: start; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .plan-label { padding-top: 3px; color: #8F9198; font-size: 11px; font-weight: 700; }
-  .plan-value { color: #D3D4DA; font-size: 14px; line-height: 1.5; text-wrap: pretty; }
-  .basis-badge { border-radius: 999px; padding: 4px 9px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .asset-lever-grid { display: grid; max-width: 960px; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+  .asset-lever-grid > div, .exposure-chain { border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; background: #0D0F13; padding: 16px 18px; }
+  .asset-lever h3 { margin: 0; color: #8F9198; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .asset-lever p { margin: 8px 0 0; color: #D0D1D6; font-size: 14px; line-height: 1.55; text-wrap: pretty; }
+  .exposure-chain { max-width: 960px; margin-top: 12px; }
+  .exposure-chain ol { display: grid; gap: 0; margin: 12px 0 0; padding: 0; list-style: none; }
+  .exposure-chain li { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 14px; padding: 11px 0; border-top: 1px solid rgba(255,255,255,.06); }
+  .exposure-chain li > span { padding-top: 9px; color: #D8B87E; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .exposure-chain li p { margin-top: 0; }
 
   @media (max-width: 640px) {
     .terminal-scroll { padding: 14px 20px 84px; }
@@ -191,16 +215,14 @@
     .tweet-tile { width: 82%; }
     .author-name span { display: block; margin-top: 2px; }
     .thesis-header h1 { font-size: 20px; }
-    .plan-row { grid-template-columns: 76px minmax(0,1fr); gap: 12px; }
-    .basis-badge { grid-column: 2; width: max-content; }
+    .asset-lever-grid { grid-template-columns: 1fr; }
   }
 
   @media (min-width: 1800px) {
     .market-identity { min-width: 230px; }
     .market-metric { padding-inline: 22px; }
     .thesis-header h1 { font-size: 24px; }
-    .plan-label { font-size: 12px; }
-    .plan-value { font-size: 15px; }
+    .asset-lever p { font-size: 15px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

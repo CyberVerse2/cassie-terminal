@@ -206,6 +206,9 @@ export async function toDetail(row: FeedRow) {
     ...card,
     thesis: idea.thesis,
     alphaDrivers: idea.reasoning?.slice(0, 3) ?? [],
+    assetContext: idea.context,
+    leverageReason: route.pipeline?.explanation ?? null,
+    leverageSteps: route.pipeline?.steps ?? [],
     plan,
     recommendedSetup: {
       side: route.direction,
