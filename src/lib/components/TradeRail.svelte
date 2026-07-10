@@ -1,4 +1,5 @@
 <script>
+  import { ArrowRight, Check, X } from '@lucide/svelte';
   let { vals } = $props();
 </script>
 
@@ -6,7 +7,7 @@
   {#if vals.showTradeHeader}
     <div class="rail-header">
       <strong>Trade</strong>
-      <button class="icon-button hov hov-text" type="button" aria-label="Close trade ticket" onclick={vals.closeTrade}>✕</button>
+      <button class="icon-button hov hov-text" type="button" aria-label="Close trade ticket" onclick={vals.closeTrade}><X size={16} aria-hidden="true" /></button>
     </div>
   {/if}
 
@@ -88,7 +89,7 @@
       <section class="positions-preview">
         <header>
           <strong>Open positions</strong>
-          <button type="button" onclick={vals.togglePortfolio}>Portfolio →</button>
+          <button type="button" onclick={vals.togglePortfolio}>Portfolio <ArrowRight size={12} aria-hidden="true" /></button>
         </header>
         {#if vals.positionPreview.length}
           {#each vals.positionPreview as position}
@@ -107,7 +108,7 @@
     </div>
   {:else}
     <div class="placed-state">
-      <div class="success-mark">✓</div>
+      <div class="success-mark"><Check size={24} strokeWidth={2.5} aria-hidden="true" /></div>
       <h2>Position opened</h2>
       <p>{vals.placedInfo}</p>
       <button class="primary-button hov hov-bright8" type="button" onclick={vals.togglePortfolio}>View portfolio</button>
@@ -170,7 +171,7 @@
   .positions-preview { margin-top: 26px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.07); }
   .positions-preview header { display: flex; align-items: center; justify-content: space-between; }
   .positions-preview header > strong { color: #777981; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
-  .positions-preview header button { border: 0; background: transparent; color: #D8B87E; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .positions-preview header button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: #D8B87E; font-size: 11px; font-weight: 700; cursor: pointer; }
   .position-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 0; border-top: 1px solid rgba(255,255,255,0.06); }
   .positions-preview header + .position-row { margin-top: 10px; }
   .position-row > div { min-width: 0; }

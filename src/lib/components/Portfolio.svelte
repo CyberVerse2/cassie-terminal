@@ -1,4 +1,5 @@
 <script>
+  import { X } from '@lucide/svelte';
   let { vals } = $props();
 </script>
 
@@ -6,7 +7,7 @@
 <div style="position:fixed; top:0; right:0; bottom:0; width:560px; max-width:92vw; background:#0C0D11; border-left:1px solid rgba(255,255,255,0.09); z-index:81; overflow-y:auto; padding:26px 30px 50px; animation:slideIn 0.28s cubic-bezier(0.22,1,0.36,1) both">
   <div style="display:flex; align-items:center; justify-content:space-between">
     <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em">Portfolio</div>
-    <button class="hov hov-text" type="button" aria-label="Close portfolio" onclick={vals.togglePortfolio} style="width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,0.11); background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8A8C93; font-size:16px">✕</button>
+    <button class="hov hov-text" type="button" aria-label="Close portfolio" onclick={vals.togglePortfolio} style="width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,0.11); background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#8A8C93"><X size={16} aria-hidden="true" /></button>
   </div>
   <div style="margin-top:6px; font-size:13px; color:#8A8C93">Deployed and available across every venue.</div>
   {#if vals.portfolioError}

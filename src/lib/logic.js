@@ -372,7 +372,7 @@ export function computeVals(state, actions) {
     onAmount: (e) => actions.setAmount(e.target.value.replace(/[^0-9.]/g, '')),
     cashFmt: money(S.cash), totalFmt: money(total), deployedFmt: money(deployed),
     upnlFmt: (upnl >= 0 ? '+' : '') + money(upnl), upnlColor: signColor(upnl),
-    upnlArrow: upnl >= 0 ? '▲' : '▼', upnlBg: upnl >= 0 ? 'rgba(82,196,137,0.12)' : 'rgba(224,96,85,0.12)',
+    upnlPositive: upnl >= 0, upnlBg: upnl >= 0 ? 'rgba(82,196,137,0.12)' : 'rgba(224,96,85,0.12)',
     upnlPctFmt: (upnl >= 0 ? '+' : '−') + Math.abs(total - upnl === 0 ? 0 : (upnl / (total - upnl)) * 100).toFixed(2) + '%',
     allocSegs, posRows, closedRows,
     positionPreview: posRows.slice(0, 2),

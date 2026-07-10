@@ -1,4 +1,5 @@
 <script>
+  import { ArrowRight } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { initialState, computeVals, money, fmtPrice } from '$lib/logic.js';
   import * as api from '$lib/api.js';
@@ -217,7 +218,7 @@
 
     {#if vals.showTradeCta}
       <button class="hov hov-bright8" type="button" onclick={vals.openTrade}
-        style="position:fixed; left:20px; right:20px; bottom:20px; z-index:70; border:0; background:#D8B87E; color:#141414; border-radius:12px; padding:15px; text-align:center; font:inherit; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.45)">Trade this →</button>
+        style="position:fixed; left:20px; right:20px; bottom:20px; z-index:70; border:0; background:#D8B87E; color:#141414; border-radius:12px; padding:15px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center; font:inherit; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.45)">Trade this <ArrowRight size={16} aria-hidden="true" /></button>
     {/if}
 
     {#if vals.showTradeBackdrop}
