@@ -86,7 +86,10 @@
       {:else}
         <article class="trade-brief">
           <header class="thesis-header">
-            <span class="conviction-badge" style="color:{vals.t_convColor}; border-color:{vals.t_convBd}">{vals.t_conviction} conviction</span>
+            <div>
+              <span class="conviction-badge" style="color:{vals.t_convColor}; border-color:{vals.t_convBd}">{vals.t_conviction} conviction</span>
+              <button class:starred={vals.t_starred} class="thesis-star" type="button" aria-label={vals.t_starred ? 'Unstar this thesis' : 'Star this thesis'} aria-pressed={vals.t_starred} onclick={vals.t_toggleStar}>★</button>
+            </div>
             <h1>{vals.t_thesis}</h1>
           </header>
 
@@ -107,7 +110,7 @@
           {#if vals.t_invalidatingThesis}
             <section class="brief-section counter-thesis">
               <h2>Invalidating thesis in your feed</h2>
-              <article>
+              <button type="button" onclick={vals.t_invalidatingThesis.open}>
                 <div class="counter-source">
                   <img src={vals.t_invalidatingThesis.author.avatarUrl} alt="" />
                   <div>
@@ -118,10 +121,8 @@
                 </div>
                 <h3>{vals.t_invalidatingThesis.thesis}</h3>
                 <p>{vals.t_invalidatingThesis.text}</p>
-                {#if vals.t_invalidatingThesis.sourceUrl}
-                  <a href={vals.t_invalidatingThesis.sourceUrl} target="_blank" rel="noreferrer">View opposing post ↗</a>
-                {/if}
-              </article>
+                <span class="counter-open">Open thesis →</span>
+              </button>
             </section>
           {/if}
 
@@ -205,7 +206,10 @@
   .detail-error { color: #E87970; }
   .trade-brief { width: 100%; margin-top: 28px; }
   .thesis-header { position: relative; }
+  .thesis-header > div { display: flex; align-items: center; gap: 10px; }
   .thesis-header h1 { max-width: 68ch; margin: 12px 0 0; color: #EAE9E4; font-size: 22px; font-weight: 550; letter-spacing: -0.018em; line-height: 1.45; text-wrap: pretty; }
+  .thesis-star { border: 0; background: transparent; padding: 2px; color: #50525A; font-size: 19px; line-height: 1; cursor: pointer; }
+  .thesis-star:hover, .thesis-star:focus-visible, .thesis-star.starred { outline: 0; color: #D8B87E; }
   .conviction-badge { display: inline-block; border: 1px solid; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; text-transform: lowercase; }
   .brief-section { margin-top: 30px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.08); }
   .brief-section h2 { margin: 0 0 15px; color: #E7E6E2; font-size: 15px; font-weight: 700; }
@@ -213,7 +217,8 @@
   .driver-row { display: flex; align-items: flex-start; gap: 12px; }
   .driver-row > span { width: 6px; height: 6px; margin-top: 9px; flex-shrink: 0; border-radius: 50%; background: #D8B87E; }
   .driver-row p { max-width: 70ch; margin: 0; color: #C4C6CC; font-size: 15px; line-height: 1.6; text-wrap: pretty; }
-  .counter-thesis > article { max-width: 960px; border: 1px solid rgba(224,96,85,.24); border-radius: 11px; background: rgba(224,96,85,.045); padding: 18px; }
+  .counter-thesis > button { display: block; width: min(100%, 960px); border: 1px solid rgba(224,96,85,.24); border-radius: 11px; background: rgba(224,96,85,.045); padding: 18px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .counter-thesis > button:hover, .counter-thesis > button:focus-visible { outline: 0; border-color: rgba(224,96,85,.5); background: rgba(224,96,85,.075); }
   .counter-source { display: flex; align-items: center; gap: 10px; }
   .counter-source img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #181A20; }
   .counter-source div { display: flex; min-width: 0; flex: 1; flex-direction: column; }
@@ -222,7 +227,7 @@
   .counter-source b { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .06em; }
   .counter-thesis h3 { margin: 15px 0 0; color: #E5E4DF; font-size: 17px; line-height: 1.4; }
   .counter-thesis p { max-width: 76ch; margin: 8px 0 0; color: #AEB0B7; font-size: 14px; line-height: 1.55; }
-  .counter-thesis a { display: inline-block; margin-top: 13px; color: #D8B87E; font-size: 11px; font-weight: 650; text-decoration: none; }
+  .counter-open { display: inline-block; margin-top: 13px; color: #D8B87E; font-size: 11px; font-weight: 650; }
   .asset-lever-grid { display: grid; max-width: 960px; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
   .asset-lever-grid > div, .exposure-chain { border: 1px solid rgba(255,255,255,0.08); border-radius: 11px; background: #0D0F13; padding: 16px 18px; }
   .asset-lever h3 { margin: 0; color: #8F9198; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }

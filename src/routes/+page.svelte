@@ -17,6 +17,7 @@
   const DIR = { long: 'Long', short: 'Short', yes: 'Yes', no: 'No' };
   let ideasToken = 0;
   let detailToken = 0;
+  const STARRED_IDEAS_KEY = 'cassie.starred-theses';
 
   async function loadStatus() {
     try { state.status = await api.fetchStatus(); } catch { /* header just stays "connecting…" */ }
@@ -82,7 +83,13 @@
     const token = ++detailToken;
     try {
       const detail = await api.fetchIdea(id);
-      if (token === detailToken) { state.detail = detail; state.detailLoading = false; }
+      if (token === detailToken) {
+        state.detail = detail;
+        state.detailLoading = false;
+        if (!card?.author?.handle && detail.author?.handle) {
+          try { state.author = await api.fetchAuthor(detail.author.handle); } catch { /* best effort */ }
+        }
+      }
     } catch (e) {
       if (token === detailToken) { state.detailLoading = false; state.detailError = String(e?.message ?? e); }
     }
@@ -90,6 +97,14 @@
     if (handle) {
       try { const a = await api.fetchAuthor(handle); if (state.selId === id) state.author = a; } catch { /* best effort */ }
     }
+  }
+
+  function toggleStarredIdea(id) {
+    const starredIdeaIds = state.starredIdeaIds.includes(id)
+      ? state.starredIdeaIds.filter((starredId) => starredId !== id)
+      : [...state.starredIdeaIds, id];
+    localStorage.setItem(STARRED_IDEAS_KEY, JSON.stringify(starredIdeaIds));
+    state.starredIdeaIds = starredIdeaIds;
   }
 
   function setTab(tab) {
@@ -166,9 +181,14 @@
     }
   }
 
-  const actions = { setState, selectIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition };
+  const actions = { setState, selectIdea, toggleStarredIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition };
 
   onMount(() => {
+    const storedStars = JSON.parse(localStorage.getItem(STARRED_IDEAS_KEY) ?? '[]');
+    if (!Array.isArray(storedStars) || storedStars.some((id) => typeof id !== 'string')) {
+      throw new Error('Invalid saved thesis watchlist');
+    }
+    state.starredIdeaIds = storedStars;
     loadStatus();
     loadIdeas(state.tab);
     loadPortfolio();

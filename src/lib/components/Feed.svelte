@@ -102,7 +102,10 @@
             </div>
           </button>
           <div class="idea-foot">
-            <span>{idea.tweetCount} tweet{idea.tweetCount === 1 ? '' : 's'} · {idea.age}</span>
+            <div class="idea-meta">
+              <button class:starred={idea.starred} class="feed-star" type="button" aria-label={idea.starred ? `Unstar ${idea.market} thesis` : `Star ${idea.market} thesis`} aria-pressed={idea.starred} onclick={idea.toggleStar}>★</button>
+              <span>{idea.tweetCount} tweet{idea.tweetCount === 1 ? '' : 's'} · {idea.age}</span>
+            </div>
             <div class="quick-entry" aria-label={`Quick ${idea.dirLabel.toLowerCase()} ${idea.market} entry`}>
               {#each idea.quickAmounts as amount}
                 <button type="button" disabled={amount.disabled} onclick={amount.enter}>{amount.label}</button>
@@ -166,6 +169,9 @@
   .collective-tweet h2 { margin: 10px 0 0; color: #E7E6E2; font-size: 14px; font-weight: 600; line-height: 1.35; }
   .collective-tweet p { display: -webkit-box; overflow: hidden; margin: 7px 0 0; color: #A7A9B0; font-size: 12px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .idea-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px 15px; color: #666870; font-family: 'IBM Plex Mono', monospace; font-size: 9px; }
+  .idea-meta { display: flex; min-width: 0; align-items: center; gap: 7px; }
+  .feed-star { border: 0; background: transparent; padding: 1px; color: #4F5158; font-size: 15px; line-height: 1; cursor: pointer; }
+  .feed-star:hover, .feed-star:focus-visible, .feed-star.starred { outline: 0; color: #D8B87E; }
   .quick-entry { display: flex; flex-shrink: 0; gap: 4px; }
   .quick-entry button { min-width: 38px; border: 1px solid rgba(216,184,126,.2); border-radius: 5px; background: rgba(216,184,126,.06); padding: 5px 7px; color: #CBB17E; font-size: 9px; font-weight: 700; cursor: pointer; }
   .quick-entry button:hover, .quick-entry button:focus-visible { border-color: #D8B87E; background: #D8B87E; color: #111; outline: 0; }

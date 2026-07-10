@@ -33,6 +33,7 @@ export const initialState = {
   detail: null,
   detailLoading: false,
   detailError: null,
+  starredIdeaIds: [],
   author: null, // track record for the selected idea's author
   status: null, // { lastFetchAt, routedIdeas }
   // trade rail (paper)
@@ -163,11 +164,15 @@ export function computeVals(state, actions) {
     ? S.ideas
     : S.ideas.filter((idea) => idea.horizons?.includes(S.horizon) || idea.horizon === S.horizon);
   const query = S.query.trim().toLocaleLowerCase();
-  const visibleIdeas = query
+  const matchingIdeas = query
     ? horizonIdeas.filter((idea) => [idea.ticker, idea.author?.name, idea.author?.handle, idea.text, idea.thesis,
         ...(idea.groupMembers ?? []).flatMap((member) => [member.author?.name, member.author?.handle, member.text])]
         .some((value) => value?.toLocaleLowerCase().includes(query)))
     : horizonIdeas;
+  const visibleIdeas = matchingIdeas
+    .map((idea, index) => ({ idea, index }))
+    .sort((a, b) => Number(S.starredIdeaIds.includes(b.idea.id)) - Number(S.starredIdeaIds.includes(a.idea.id)) || a.index - b.index)
+    .map(({ idea }) => idea);
   const feedItems = visibleIdeas.map((o) => {
     const priceErr = !!o.currentPriceError;
     const members = o.groupMembers ?? [o];
@@ -190,6 +195,8 @@ export function computeVals(state, actions) {
       selBar: o.id === S.selId ? '#D8B87E' : 'transparent',
       selBg: o.id === S.selId ? 'rgba(216,184,126,0.05)' : 'transparent',
       open: () => actions.selectIdea(o.id),
+      starred: S.starredIdeaIds.includes(o.id),
+      toggleStar: () => actions.toggleStarredIdea(o.id),
       quickAmounts: [100, 500, 1000].map((amount) => ({
         label: amount === 1000 ? '$1K' : `$${amount}`,
         disabled: amount > S.cash || priceErr,
@@ -277,6 +284,8 @@ export function computeVals(state, actions) {
       // detail state
       t_detailLoading: S.detailLoading, t_detailError: S.detailError,
       t_thesis: d?.thesis || '', t_alphaDrivers: d?.alphaDrivers ?? [],
+      t_starred: S.starredIdeaIds.includes(sel.id),
+      t_toggleStar: () => actions.toggleStarredIdea(sel.id),
       t_assetContext: d?.assetContext || '',
       t_leverageReason: d?.leverageReason || '',
       t_leverageSteps: d?.leverageSteps ?? [],
@@ -285,6 +294,7 @@ export function computeVals(state, actions) {
         directionLabel: dirWord(d.invalidatingThesis.direction).toUpperCase(),
         directionColor: dirColor(d.invalidatingThesis.direction),
         age: timeAgo(d.invalidatingThesis.postedAt),
+        open: () => actions.selectIdea(d.invalidatingThesis.id),
       } : null,
       // trade rail
       orderSide, orderTicker: sel.ticker, orderPrice: priceErr ? '—' : fmtPrice(sel.currentPrice),
