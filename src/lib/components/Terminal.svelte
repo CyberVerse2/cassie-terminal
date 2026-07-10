@@ -89,7 +89,7 @@
           <header class="thesis-header">
             <div>
               <span class="conviction-badge" style="color:{vals.t_convColor}; border-color:{vals.t_convBd}">{vals.t_conviction} conviction</span>
-              <button class:starred={vals.t_starred} class="thesis-star" type="button" aria-label={vals.t_starred ? 'Unstar this thesis' : 'Star this thesis'} aria-pressed={vals.t_starred} onclick={vals.t_toggleStar}><Star size={28} fill={vals.t_starred ? 'currentColor' : 'none'} aria-hidden="true" /></button>
+              <button class:starred={vals.t_starred} class="thesis-star" type="button" aria-label={vals.t_starred ? 'Unstar this thesis' : 'Star this thesis'} aria-pressed={vals.t_starred} onclick={vals.t_toggleStar}><Star size={18} fill={vals.t_starred ? 'currentColor' : 'none'} aria-hidden="true" /></button>
             </div>
             <h1>{vals.t_thesis}</h1>
           </header>
@@ -209,7 +209,7 @@
   .thesis-header { position: relative; }
   .thesis-header > div { display: flex; align-items: center; gap: 10px; }
   .thesis-header h1 { max-width: 68ch; margin: 12px 0 0; color: #EAE9E4; font-size: 22px; font-weight: 550; letter-spacing: -0.018em; line-height: 1.45; text-wrap: pretty; }
-  .thesis-star { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: rgba(255,255,255,.035); padding: 0; color: #50525A; font-size: 28px; line-height: 1; cursor: pointer; }
+  .thesis-star { display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: rgba(255,255,255,.035); padding: 0; color: #50525A; line-height: 1; cursor: pointer; }
   .thesis-star:hover, .thesis-star:focus-visible, .thesis-star.starred { outline: 0; color: #D8B87E; }
   .conviction-badge { display: inline-block; border: 1px solid; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; text-transform: lowercase; }
   .brief-section { margin-top: 30px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.08); }
