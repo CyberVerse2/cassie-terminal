@@ -8,10 +8,12 @@
 // Shapes mirror cassie-indexer/src/api/serialize.ts. We return the raw JSON and
 // do presentation mapping in logic.js.
 
+import { authHeaders } from './dynamic/auth.js';
+
 const BASE = '/api';
 
 async function getJSON(path, { signal } = {}) {
-  const res = await fetch(BASE + path, { signal, headers: { accept: 'application/json' } });
+  const res = await fetch(BASE + path, { signal, headers: { accept: 'application/json', ...authHeaders() } });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`${path} → ${res.status} ${res.statusText}${body ? `: ${body.slice(0, 200)}` : ''}`);
@@ -22,7 +24,7 @@ async function getJSON(path, { signal } = {}) {
 async function postJSON(path, body) {
   const res = await fetch(BASE + path, {
     method: 'POST',
-    headers: { accept: 'application/json', 'content-type': 'application/json' },
+    headers: { accept: 'application/json', 'content-type': 'application/json', ...authHeaders() },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await res.json().catch(() => ({}));

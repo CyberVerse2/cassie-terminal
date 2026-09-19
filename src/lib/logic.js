@@ -1,3 +1,5 @@
+import { dollarLevel } from './trading/settings.js';
+
 // View-model builder for the Cassie terminal, over the cassie-indexer read API.
 // No synthetic market data: every value here is either a live API field or a
 // deterministic presentation transform of one. The trade rail is client-side
@@ -80,11 +82,11 @@ function timeAgo(iso) {
   return Math.floor(hrs / 24) + 'd';
 }
 const isBull = (d) => d === 'long' || d === 'yes' || d === 'Long' || d === 'Yes';
-const dirColor = (d) => (isBull(d) ? '#52C489' : '#E06055');
+const dirColor = (d) => (isBull(d) ? '#B5F20B' : '#F04CA6');
 const dirWord = (d) => ({ long: 'Long', short: 'Short', yes: 'Yes', no: 'No' }[d] || (d ? d[0].toUpperCase() + d.slice(1) : ''));
-const signColor = (n) => (n === null || n === undefined ? '#8A8C93' : n > 0.0001 ? '#52C489' : n < -0.0001 ? '#E06055' : '#8A8C93');
+const signColor = (n) => (n === null || n === undefined ? '#8A8C93' : n > 0.0001 ? '#B5F20B' : n < -0.0001 ? '#F04CA6' : '#8A8C93');
 function convictionTier(c) {
-  if (c === 'high') return { word: 'HIGH', color: '#D8B87E', bd: 'rgba(216,184,126,0.4)' };
+  if (c === 'high') return { word: 'HIGH', color: '#B5F20B', bd: 'rgba(181,242,11,0.4)' };
   if (c === 'low') return { word: 'LOW', color: '#83858C', bd: 'rgba(131,133,140,0.35)' };
   return { word: 'MEDIUM', color: '#C9CBD2', bd: 'rgba(201,203,210,0.3)' }; // medium or null
 }
@@ -104,16 +106,16 @@ export function computeVals(state, actions) {
   const isNarrow = mode === 'narrow';
   const tradeIsSheet = mode !== 'wide';
   const gridCols = mode === 'wide'
-    ? 'clamp(340px, 18vw, 400px) minmax(0,1fr) clamp(344px, 18vw, 400px)'
+    ? 'clamp(280px, 21vw, 340px) minmax(0,1fr) clamp(280px, 21vw, 340px)'
     : mode === 'mid' ? '320px minmax(0,1fr)' : 'minmax(0,1fr)';
   const showFeed = !isNarrow || S.mobileScreen === 'feed';
   const showTerminal = !isNarrow || S.mobileScreen === 'terminal';
   const tradeVisible = mode === 'wide' || S.tradeOpen;
   const tradeContainerStyle = mode === 'wide'
-    ? 'border-left:1px solid rgba(255,255,255,0.06); overflow-y:auto; min-height:0; background:#0B0C0F; padding:20px'
+    ? 'border-left:1px solid rgba(255,255,255,0.06); overflow-y:auto; min-height:0; background:#090909; padding:16px'
     : isNarrow
-      ? 'position:fixed; top:0; left:0; right:0; bottom:0; overflow-y:auto; background:#0B0C0F; padding:18px; z-index:82; animation:slideUp 0.3s cubic-bezier(0.22,1,0.36,1) both'
-      : 'position:fixed; top:0; right:0; bottom:0; width:376px; max-width:90vw; overflow-y:auto; background:#0B0C0F; border-left:1px solid rgba(255,255,255,0.1); padding:20px; z-index:82; box-shadow:-16px 0 40px rgba(0,0,0,0.4); animation:slideIn 0.28s cubic-bezier(0.22,1,0.36,1) both';
+      ? 'position:fixed; top:0; left:0; right:0; bottom:0; overflow-y:auto; background:#090909; padding:18px; z-index:82; animation:slideUp 0.3s cubic-bezier(0.22,1,0.36,1) both'
+      : 'position:fixed; top:0; right:0; bottom:0; width:376px; max-width:90vw; overflow-y:auto; background:#090909; border-left:1px solid rgba(255,255,255,0.1); padding:20px; z-index:82; box-shadow:-16px 0 40px rgba(0,0,0,0.4); animation:slideIn 0.28s cubic-bezier(0.22,1,0.36,1) both';
   const sel = S.selId ? S.ideas.find((x) => x.id === S.selId) || (S.detail && S.detail.id === S.selId ? S.detail : null) : null;
   const showTradeBackdrop = tradeIsSheet && S.tradeOpen;
   const showTradeHeader = tradeIsSheet;
@@ -131,11 +133,11 @@ export function computeVals(state, actions) {
       : p.instrument === 'spot' ? 'tokens' : 'markets';
   const byKind = (k) => S.positions.reduce((a, p, i) => a + (positionKind(p) === k ? calcs[i].val : 0), 0);
   const allocSegs = [
-    { label: 'Perps', v: byKind('perps'), color: '#37B87D' },
-    { label: 'Stocks', v: byKind('stocks'), color: '#8FB8DE' },
-    { label: 'Tokens', v: byKind('tokens'), color: '#E3A75A' },
-    { label: 'Markets', v: byKind('markets'), color: '#C79FE0' },
-    { label: 'Available', v: S.cash, color: '#33353C' },
+    { label: 'Perps', v: byKind('perps'), color: '#B5F20B' },
+    { label: 'Stocks', v: byKind('stocks'), color: '#D1DDAD' },
+    { label: 'Tokens', v: byKind('tokens'), color: '#8DAA53' },
+    { label: 'Markets', v: byKind('markets'), color: '#71944C' },
+    { label: 'Available', v: S.cash, color: '#333333' },
   ].filter((s) => s.v > 0.01 || s.label === 'Available').map((s) => ({ ...s, w: ((s.v / total) * 100).toFixed(1) + '%', pct: ((s.v / total) * 100).toFixed(0) + '%' }));
   const posRows = S.positions.map((p, i) => {
     const c = calcs[i];
@@ -192,22 +194,18 @@ export function computeVals(state, actions) {
       groupTitle: o.thesis, tweetCount: members.length,
       age: timeAgo(o.postedAt), srcText: o.text,
       selected: o.id === S.selId,
-      selBar: o.id === S.selId ? '#D8B87E' : 'transparent',
-      selBg: o.id === S.selId ? 'rgba(216,184,126,0.05)' : 'transparent',
+      selBar: o.id === S.selId ? '#B5F20B' : 'transparent',
+      selBg: o.id === S.selId ? 'rgba(181,242,11,0.05)' : 'transparent',
       open: () => actions.selectIdea(o.id),
       starred: S.starredIdeaIds.includes(o.id),
       toggleStar: () => actions.toggleStarredIdea(o.id),
-      quickAmounts: [100, 500, 1000].map((amount) => ({
-        label: amount === 1000 ? '$1K' : `$${amount}`,
-        disabled: amount > S.cash || priceErr,
-        enter: () => actions.quickEnter(o.id, amount),
-      })),
+      quickAmounts: [{ label:'View trade', disabled:false, enter:()=>actions.quickEnter(o.id) }],
     };
   });
   const filterTabs = FEED_TABS.map((f) => ({
     ...f, onClick: () => actions.setTab(f.key),
     selected: S.tab === f.key,
-    bg: S.tab === f.key ? '#24262D' : 'transparent', fg: S.tab === f.key ? '#E7E6E2' : '#8A8C93',
+    bg: S.tab === f.key ? '#242424' : 'transparent', fg: S.tab === f.key ? '#EEEEEE' : '#8A8C93',
   }));
   const horizonOptions = [
     { value: 'all', label: 'All', title: 'All horizons' },
@@ -234,7 +232,7 @@ export function computeVals(state, actions) {
     const groupMembers = sel.groupMembers ?? [sel];
 
     const summaryCells = [
-      { label: 'Now', value: priceErr ? '—' : fmtPrice(sel.currentPrice), color: '#E7E6E2' },
+      { label: 'Now', value: priceErr ? '—' : fmtPrice(sel.currentPrice), color: '#EEEEEE' },
       { label: 'Since call', value: fmtPct(sel.sincePostedPct, 2), color: signColor(sel.sincePostedPct) },
       { label: 'Side', value: callSide.toUpperCase(), color: dirColor(sel.direction) },
     ];
@@ -278,8 +276,8 @@ export function computeVals(state, actions) {
         returnFmt: fmtPct(sel.sincePostedPct, 1),
         returnColor: signColor(sel.sincePostedPct),
         returnBg: sel.sincePostedPct > 0
-          ? 'rgba(82,196,137,0.1)'
-          : sel.sincePostedPct < 0 ? 'rgba(224,96,85,0.1)' : 'rgba(255,255,255,0.06)',
+          ? 'rgba(181,242,11,0.1)'
+          : sel.sincePostedPct < 0 ? 'rgba(240,76,166,0.1)' : 'rgba(255,255,255,0.06)',
       } : null,
       // detail state
       t_detailLoading: S.detailLoading, t_detailError: S.detailError,
@@ -295,6 +293,23 @@ export function computeVals(state, actions) {
         directionColor: dirColor(d.invalidatingThesis.direction),
         age: timeAgo(d.invalidatingThesis.postedAt),
         open: () => actions.selectIdea(d.invalidatingThesis.id),
+      } : null,
+      // AI trade-plan presentation uses the selected idea's existing analysis.
+      aiPlan: setup ? {
+        ideaId: sel.id,
+        thesis: d?.thesis || null,
+        action: setup.side === 'long' ? 'buy' : setup.side === 'short' ? 'short' : setup.side === 'yes' ? 'buy Yes on' : setup.side === 'no' ? 'buy No on' : null,
+        market: sel.ticker,
+        entryPrice: priceErr ? null : sel.currentPrice,
+        instrument: sel.instrument,
+        side: setup.side,
+        entry: !priceErr && sel.currentPrice != null ? fmtPrice(sel.currentPrice) : null,
+        target: setup.target?.text || null,
+        stop: setup.stop?.text || null,
+        targetLevel: dollarLevel(setup.target?.text) ? fmtPrice(dollarLevel(setup.target?.text)) : null,
+        stopLevel: dollarLevel(setup.stop?.text) ? fmtPrice(dollarLevel(setup.stop?.text)) : null,
+        reason: d?.alphaDrivers?.[0] || null,
+        horizon: setup.horizon?.text || null,
       } : null,
       // trade rail
       orderSide, orderTicker: sel.ticker, orderPrice: priceErr ? '—' : fmtPrice(sel.currentPrice),
@@ -333,7 +348,7 @@ export function computeVals(state, actions) {
       estimatedFeeFmt: '—',
       quickChips: ['100', '500', '1000', 'Max'].map((q) => ({ label: q === 'Max' ? 'Max' : '$' + Number(q).toLocaleString('en-US'), onClick: () => actions.setAmount(q === 'Max' ? S.cash.toFixed(2) : q) })),
       canPlace: valid,
-      placeBg: valid ? '#D8B87E' : '#1E2027', placeFg: valid ? '#141414' : '#6C6E75',
+      placeBg: valid ? '#B5F20B' : '#202020', placeFg: valid ? '#141414' : '#6C6E75',
       placeCursor: valid ? 'pointer' : 'not-allowed',
       placeLabel: S.tradeSubmitting ? 'Placing…' : priceErr ? 'Price unavailable' : a > S.cash ? 'Insufficient balance' : 'Place trade',
       place: () => actions.place(),
@@ -361,6 +376,7 @@ export function computeVals(state, actions) {
       const portfolioOpen = !s.portfolioOpen;
       return { portfolioOpen, ...(portfolioOpen ? { tradeOpen: false } : {}) };
     }),
+    onAuthChanged: () => actions.loadPortfolio(),
     resetTrade: () => setState({ placed: false, amount: '', appliedSetup: null }),
     feedItems, filterTabs, horizonOptions, horizonValue: S.horizon,
     onHorizonChange: (e) => actions.setHorizon(e.currentTarget.value),
@@ -372,7 +388,7 @@ export function computeVals(state, actions) {
     onAmount: (e) => actions.setAmount(e.target.value.replace(/[^0-9.]/g, '')),
     cashFmt: money(S.cash), totalFmt: money(total), deployedFmt: money(deployed),
     upnlFmt: (upnl >= 0 ? '+' : '') + money(upnl), upnlColor: signColor(upnl),
-    upnlPositive: upnl >= 0, upnlBg: upnl >= 0 ? 'rgba(82,196,137,0.12)' : 'rgba(224,96,85,0.12)',
+    upnlPositive: upnl >= 0, upnlBg: upnl >= 0 ? 'rgba(181,242,11,0.12)' : 'rgba(240,76,166,0.12)',
     upnlPctFmt: (upnl >= 0 ? '+' : '−') + Math.abs(total - upnl === 0 ? 0 : (upnl / (total - upnl)) * 100).toFixed(2) + '%',
     allocSegs, posRows, closedRows,
     positionPreview: posRows.slice(0, 2),

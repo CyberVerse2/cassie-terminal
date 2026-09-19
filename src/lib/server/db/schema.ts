@@ -187,6 +187,7 @@ export const routePricing = pgTable(
 
 export const paperAccounts = pgTable("paper_accounts", {
   id: uuid("id").primaryKey(),
+  dynamicUserId: text("dynamic_user_id").unique(),
   startingCashUsd: numeric("starting_cash_usd", { precision: 20, scale: 2 }).notNull().default("25000"),
   cashUsd: numeric("cash_usd", { precision: 20, scale: 2 }).notNull().default("25000"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -1,5 +1,6 @@
 <script>
   import { Plus, Search, TrendingDown, TrendingUp } from '@lucide/svelte';
+  import Auth from './Auth.svelte';
   let { vals } = $props();
 </script>
 
@@ -19,8 +20,6 @@
     <div class="spacer"></div>
   {/if}
 
-  <div class="feed-status"><span></span>{vals.statusLine}</div>
-
   <div class="account-area">
     <div class="portfolio-card">
       <button class="portfolio-value hov hov-op" type="button" onclick={vals.togglePortfolio}>
@@ -29,35 +28,31 @@
       </button>
       <button class="portfolio-add hov hov-bright" type="button" aria-label="Open portfolio" onclick={vals.togglePortfolio}><Plus size={18} strokeWidth={2.4} aria-hidden="true" /></button>
     </div>
-    <div class="avatar" aria-label="Account AK">AK</div>
+    <Auth onSignedIn={vals.onAuthChanged} onProfileClick={vals.togglePortfolio} profileOpen={vals.portfolioOpen} />
   </div>
 </header>
 
 <style>
-  header { display: flex; height: 60px; min-width: 0; align-items: center; gap: clamp(8px, 1.4vw, 20px); flex-shrink: 0; padding: 0 clamp(10px, 1.3vw, 18px); border-bottom: 1px solid rgba(255,255,255,0.06); background: #0C0D10; }
+  header { display: flex; height: 52px; min-width: 0; align-items: center; gap: clamp(8px, 1.4vw, 20px); flex-shrink: 0; padding: 0 clamp(10px, 1.3vw, 18px); border-bottom: 1px solid rgba(255,255,255,0.06); background: #050505; }
   button, input { font: inherit; }
-  .wordmark { flex-shrink: 0; color: #E7E6E2; font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+  .wordmark { flex-shrink: 0; color: #eeeeee; font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
   .search-wrap { display: flex; min-width: 0; flex: 1; justify-content: center; }
-  .search-field { display: flex; width: 100%; max-width: 900px; height: 40px; align-items: center; gap: 10px; padding: 0 12px 0 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; background: #0F1116; }
-  .search-field:focus-within { border-color: rgba(216,184,126,0.6); }
-  .search-field :global(.search-icon) { flex-shrink: 0; color: #55575E; }
-  .search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #E7E6E2; font-size: 14px; }
-  .search-key { padding: 3px 8px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: #191B21; color: #9A9CA3; font-size: 11px; font-weight: 600; }
+  .search-field { display: flex; width: 100%; max-width: 900px; height: 34px; align-items: center; gap: 10px; padding: 0 12px 0 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: #101010; }
+  .search-field:focus-within { border-color: rgba(181,242,11,0.6); }
+  .search-field :global(.search-icon) { flex-shrink: 0; color: #575757; }
+  .search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #eeeeee; font-size: 12px; }
+  .search-key { padding: 3px 8px; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; background: #1a1a1a; color: #9c9c9c; font-size: 11px; font-weight: 600; }
   .spacer { flex: 1; }
-  .feed-status { display: flex; align-items: center; gap: 6px; flex-shrink: 0; color: #777981; font-size: 11px; white-space: nowrap; }
-  .feed-status span { width: 6px; height: 6px; border-radius: 50%; background: #52C489; }
   .account-area { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .portfolio-card { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; background: #101218; }
-  .portfolio-value { display: flex; align-items: center; gap: 9px; padding: 2px 4px 2px 10px; border: 0; background: transparent; color: #E7E6E2; cursor: pointer; }
-  .portfolio-value > span:first-child { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
-  .pnl { display: inline-flex; align-items: center; gap: 4px; border-radius: 7px; padding: 5px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; }
-  .portfolio-add { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; flex-shrink: 0; border: 0; border-radius: 8px; background: #4D9FEB; color: #0A0B0D; font-size: 19px; font-weight: 600; line-height: 1; cursor: pointer; }
-  .avatar { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg,#E3A75A,#D8865A); color: #0A0B0D; font-size: 12px; font-weight: 700; }
-  .portfolio-value:focus-visible, .portfolio-add:focus-visible { outline: 2px solid #D8B87E; outline-offset: 2px; }
+  .portfolio-card { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid rgba(255,255,255,0.09); border-radius: 6px; background: #111111; }
+  .portfolio-value { display: flex; align-items: center; gap: 9px; padding: 2px 4px 2px 10px; border: 0; background: transparent; color: #eeeeee; cursor: pointer; }
+  .portfolio-value > span:first-child { font-family: var(--font-mono); font-size: 16px; font-weight: 600; }
+  .pnl { display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; padding: 5px 8px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+  .portfolio-add { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; flex-shrink: 0; border: 0; border-radius: 4px; background: #B5F20B; color: #080808; font-size: 19px; font-weight: 600; line-height: 1; cursor: pointer; }
+  .portfolio-value:focus-visible, .portfolio-add:focus-visible { outline: 2px solid #B5F20B; outline-offset: 2px; }
 
   @media (max-width: 1200px) {
     .search-key { display: none; }
-    .feed-status { display: none; }
   }
 
   @media (max-width: 700px) {
@@ -70,13 +65,14 @@
     .portfolio-value > span:first-child { font-size: 13px; }
     .pnl { display: none; }
     .portfolio-add { width: 28px; height: 28px; }
-    .avatar { display: none; }
+    :global(.auth .signin) { height: 34px; padding-inline: 10px; font-size: 12px; }
+    :global(.auth .avatar) { width: 34px; height: 34px; }
   }
 
   @media (max-width: 420px) {
     header { gap: 7px; padding-inline: 9px; }
     .wordmark { font-size: 17px; }
-    .search-field { gap: 5px; border-radius: 9px; }
+    .search-field { gap: 5px; border-radius: 4px; }
     .portfolio-value > span:first-child { font-size: 12px; }
   }
 

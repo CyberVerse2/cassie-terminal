@@ -47,7 +47,8 @@ cp .env .env.local   # or edit .env: DATABASE_URL must point at the indexer's DB
 npm run dev          # http://localhost:5173
 ```
 
-`.env` keys: `DATABASE_URL` (required), `ALPACA_CLIENT_ID`, `ALPACA_CLIENT_SECRET`, and
+`.env` keys: `DATABASE_URL` (required), `PUBLIC_DYNAMIC_ENVIRONMENT_ID` (email sign-up),
+`ALPACA_CLIENT_ID`, `ALPACA_CLIENT_SECRET`, and
 `ALPACA_ENV=sandbox|live` (required for equity prices), `COINGECKO_API_KEY` (optional), and the public
 `HYPERLIQUID_API_URL` / `POLYMARKET_*` defaults.
 
@@ -58,3 +59,54 @@ npm run build        # adapter-node build to build/
 npm run preview      # preview the production build
 node build           # run the production server
 ```
+
+## Trading setup and delegated access
+
+The signup flow introduces Cassie, lets the user choose per-trade allocation,
+maximum deployed capital, and position count, then saves those settings against
+their verified Dynamic user ID. Portfolio contains wallet funding addresses,
+limit editing, and wallet-delegation revocation. Saved preferences do not grant
+signing authority. The right rail estimates cash-position outcomes only when
+entry and exit prices are unambiguous and refer to the traded asset.
+
+`POST /api/trading/delegation/webhook` verifies Dynamic's HMAC against the exact
+request bytes, checks the environment and owner, verifies decryption, and stores
+only encrypted credentials. Revocation clears credentials and retains a
+timestamped tombstone so an older grant cannot reactivate access. The server
+needs `DYNAMIC_WEBHOOK_SECRET` and `DYNAMIC_DELEGATION_PRIVATE_KEY` (PEM; escaped
+newlines are accepted). Never commit either value or expose them to the browser.
+
+Dynamic Sandbox configuration was updated on September 19, 2026: embedded
+wallets, optional delegated access, a supplied RSA public key, local/deployed
+CORS origins, and the grant/revocation webhook at
+`https://cassie-terminal.cyberverse.cloud/api/trading/delegation/webhook`.
+Automatic delegation prompts and mandatory delegation remain off. Matching
+secrets are in the ignored local `.env`; deployment needs those server secrets
+and the new route before deliveries can succeed.
+
+The onboarding now requests Dynamic delegation and waits for a verified webhook
+before confirming success. Server signing also requires `DYNAMIC_API_KEY`; Flash
+quotes and execution require `DEFINITIVE_API_KEY`. These are server-only values.
+The local database is separate from deployment: a webhook delivered to the live
+app does not automatically reach local development. Deploy the receiver and its
+matching credentials before testing grants, then replay failed deliveries in
+Dynamic. A successful wallet prompt alone does not establish backend readiness.
+
+The right rail submits to `/api/trading/orders`. The server reserves the user's
+allocation under a row lock, checks the delegated wallet owner, validates quote
+signing payloads, and signs capped approvals plus an entry with attached exits.
+This execution path currently supports Base long cash positions only. It requires
+verified `routes.market_meta.definitive` data (`chain: "base"`, contract `address`,
+and integer `decimals`) and unambiguous dollar target/stop prices. The existing
+research pipeline does not yet populate that mapping: unsupported ideas remain
+research and cannot be traded by guessing a ticker's contract.
+
+Portfolio reconciles entry and protective orders with Definitive. Entry fills
+keep capital reserved; finalized exits release it. Ambiguous submissions retain
+their reservation for review. Attached exits run at Definitive without further
+wallet prompts; this is not yet an autonomous agent that revises a thesis or
+rebalances positions. End-to-end signing, webhook delivery in deployment, and
+live execution remain unverified. No real trade has been placed during setup.
+Existing paper balances remain explicitly labeled simulated in Portfolio.
+
+Validation: `node --test src/lib/trading/settings.test.js src/lib/server/trading/*.test.js` and `npm run build`.

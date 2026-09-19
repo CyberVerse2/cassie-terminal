@@ -74,9 +74,9 @@
         const chart = createChart(host, {
           autoSize: true,
           layout: {
-            background: { type: ColorType.Solid, color: '#0A0C10' },
-            textColor: '#92949B',
-            fontFamily: "'IBM Plex Mono', monospace",
+            background: { type: ColorType.Solid, color: '#080808' },
+            textColor: '#949494',
+            fontFamily: 'Geist Mono, monospace',
             fontSize: 11,
           },
           grid: {
@@ -99,11 +99,11 @@
 
         const priceSeries = probability
           ? chart.addSeries(AreaSeries, {
-              lineColor: '#A98BD4',
-              topColor: 'rgba(169,139,212,0.25)',
-              bottomColor: 'rgba(169,139,212,0.02)',
+              lineColor: '#B5F20B',
+              topColor: 'rgba(181,242,11,0.25)',
+              bottomColor: 'rgba(181,242,11,0.02)',
               lineWidth: 2,
-              priceLineColor: '#A98BD4',
+              priceLineColor: '#B5F20B',
               priceLineStyle: 2,
               priceFormat: {
                 type: 'custom',
@@ -112,12 +112,12 @@
               },
             })
           : chart.addSeries(CandlestickSeries, {
-              upColor: '#13B89D',
-              downColor: '#F04452',
+              upColor: '#B5F20B',
+              downColor: '#F04CA6',
               borderVisible: false,
-              wickUpColor: '#13B89D',
-              wickDownColor: '#F04452',
-              priceLineColor: '#4D9FEB',
+              wickUpColor: '#B5F20B',
+              wickDownColor: '#F04CA6',
+              priceLineColor: '#B5F20B',
               priceLineStyle: 2,
             });
 
@@ -147,7 +147,7 @@
           volume.setData(points.map((point) => ({
             time: point.time,
             value: point.volume,
-            color: point.close >= point.open ? 'rgba(19,184,157,0.42)' : 'rgba(240,68,82,0.42)',
+            color: point.close >= point.open ? 'rgba(181,242,11,0.42)' : 'rgba(240,76,166,0.42)',
           })));
         }
 
@@ -318,36 +318,36 @@
 </div>
 
 <style>
-  .chart-shell { position: relative; width: 100%; height: 100%; overflow: hidden; background: #0A0C10; }
+  .chart-shell { position: relative; width: 100%; height: 100%; overflow: hidden; background: #080808; }
   .chart-host { position: absolute; inset: 0 0 38px; }
-  .chart-toolbar { position: absolute; inset: auto 0 0; z-index: 4; display: flex; height: 38px; align-items: center; gap: 4px; padding: 0 10px; border-top: 1px solid rgba(255,255,255,0.07); background: #0D0F13; }
-  .chart-toolbar button { min-width: 38px; height: 28px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: #777981; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; cursor: pointer; }
-  .chart-toolbar button:hover { color: #D6D7DC; }
-  .chart-toolbar button.active { background: #292B31; color: #E7E6E2; }
-  .chart-toolbar button:focus-visible { outline: 2px solid #D8B87E; outline-offset: 1px; }
-  .chart-status { position: absolute; inset: 0 0 38px; z-index: 2; display: grid; place-items: center; background: #0A0C10; color: #777981; font-size: 11px; }
+  .chart-toolbar { position: absolute; inset: auto 0 0; z-index: 4; display: flex; height: 38px; align-items: center; gap: 4px; padding: 0 10px; border-top: 1px solid rgba(255,255,255,0.07); background: #0d0d0d; }
+  .chart-toolbar button { min-width: 38px; height: 28px; padding: 0 9px; border: 0; border-radius: 4px; background: transparent; color: #797979; font-family: var(--font-mono); font-size: 10px; font-weight: 600; cursor: pointer; }
+  .chart-toolbar button:hover { color: #d7d7d7; }
+  .chart-toolbar button.active { background: #292929; color: #eeeeee; }
+  .chart-toolbar button:focus-visible { outline: 2px solid #B5F20B; outline-offset: 1px; }
+  .chart-status { position: absolute; inset: 0 0 38px; z-index: 2; display: grid; place-items: center; background: #080808; color: #797979; font-size: 11px; }
   .chart-status.loading span { width: 42%; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); animation: pulse 1.4s ease-in-out infinite; }
-  .chart-status.error { color: #E87970; }
+  .chart-status.error { color: #FF78B8; }
   .posted-annotation { position: absolute; inset: 0 auto 38px; z-index: 2; width: 0; pointer-events: none; }
-  .posted-line { position: absolute; inset: 0 auto 24px 0; border-left: 1px dashed rgba(216,184,126,0.78); }
-  .post-marker { position: absolute; left: 0; z-index: 2; display: grid; width: 38px; height: 38px; place-items: center; padding: 3px; border: 1px solid rgba(216,184,126,0.82); border-radius: 50%; background: #0D0F13; box-shadow: 0 2px 8px rgba(0,0,0,0.55); transform: translate(-50%, -50%); cursor: pointer; pointer-events: auto; }
-  .post-marker img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #20222A; }
-  .post-marker:hover { border-color: #E5C98F; transform: translate(-50%, -50%) scale(1.05); }
-  .post-marker:focus-visible { outline: 2px solid #D8B87E; outline-offset: 3px; }
-  .mini-tweet { --card-x: -50%; position: absolute; left: 0; z-index: 3; width: min(330px, 72vw); padding: 13px 14px; border: 1px solid rgba(216,184,126,0.46); border-radius: 12px; background: rgba(12,14,18,0.98); box-shadow: 0 6px 8px rgba(0,0,0,0.38); transform: translate(var(--card-x), 24px); animation: cardIn 0.16s cubic-bezier(0.22,1,0.36,1) both; pointer-events: auto; }
+  .posted-line { position: absolute; inset: 0 auto 24px 0; border-left: 1px dashed rgba(181,242,11,0.78); }
+  .post-marker { position: absolute; left: 0; z-index: 2; display: grid; width: 38px; height: 38px; place-items: center; padding: 3px; border: 1px solid rgba(181,242,11,0.82); border-radius: 50%; background: #0d0d0d; box-shadow: 0 2px 8px rgba(0,0,0,0.55); transform: translate(-50%, -50%); cursor: pointer; pointer-events: auto; }
+  .post-marker img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #222222; }
+  .post-marker:hover { border-color: #C7FF38; transform: translate(-50%, -50%) scale(1.05); }
+  .post-marker:focus-visible { outline: 2px solid #B5F20B; outline-offset: 3px; }
+  .mini-tweet { --card-x: -50%; position: absolute; left: 0; z-index: 3; width: min(330px, 72vw); padding: 13px 14px; border: 1px solid rgba(181,242,11,0.46); border-radius: 6px; background: rgba(12,12,12,0.98); box-shadow: 0 6px 8px rgba(0,0,0,0.38); transform: translate(var(--card-x), 24px); animation: cardIn 0.16s cubic-bezier(0.22,1,0.36,1) both; pointer-events: auto; }
   .mini-tweet.above { transform: translate(var(--card-x), calc(-100% - 24px)); }
   .posted-annotation.left .mini-tweet { --card-x: -8%; }
   .posted-annotation.right .mini-tweet { --card-x: -92%; }
   .mini-tweet-head { display: flex; min-width: 0; align-items: center; gap: 6px; }
-  .mini-tweet-head img { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; object-fit: cover; background: #20222A; }
-  .mini-tweet-head strong { overflow: hidden; color: #E1E1DE; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-  .mini-tweet-head span { overflow: hidden; color: #777981; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-  .mini-tweet-head time { margin-left: auto; color: #777981; font-size: 10px; white-space: nowrap; }
-  .mini-tweet p { display: -webkit-box; overflow: hidden; margin: 9px 0 0; color: #C4C6CC; font-size: 12px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+  .mini-tweet-head img { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; object-fit: cover; background: #222222; }
+  .mini-tweet-head strong { overflow: hidden; color: #e3e3e3; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-tweet-head span { overflow: hidden; color: #797979; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-tweet-head time { margin-left: auto; color: #797979; font-size: 10px; white-space: nowrap; }
+  .mini-tweet p { display: -webkit-box; overflow: hidden; margin: 9px 0 0; color: #c6c6c6; font-size: 12px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
   .mini-tweet-return { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-  .mini-tweet-return strong { padding: 4px 7px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
-  .mini-tweet-return span { color: #777981; font-size: 10px; }
-  .posted-label { position: absolute; bottom: 5px; padding: 3px 6px; border-radius: 4px; background: #191B21; color: #D8B87E; font-family: 'IBM Plex Mono', monospace; font-size: 8px; white-space: nowrap; }
+  .mini-tweet-return strong { padding: 4px 7px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; }
+  .mini-tweet-return span { color: #797979; font-size: 10px; }
+  .posted-label { position: absolute; bottom: 5px; padding: 3px 6px; border-radius: 4px; background: #1a1a1a; color: #B5F20B; font-family: var(--font-mono); font-size: 8px; white-space: nowrap; }
   .posted-annotation.left .posted-label { transform: translateX(-8%); }
   .posted-annotation.center .posted-label { transform: translateX(-50%); }
   .posted-annotation.right .posted-label { transform: translateX(-92%); }

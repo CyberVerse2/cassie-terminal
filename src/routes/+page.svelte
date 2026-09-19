@@ -1,5 +1,8 @@
 <script>
+  import { dev } from '$app/environment';
   import { ArrowRight } from '@lucide/svelte';
+  import TradingOnboarding from '$lib/components/TradingOnboarding.svelte';
+  import { tradingSetup, startTradingSetup } from '$lib/trading/session.svelte.js';
   import { onMount } from 'svelte';
   import { initialState, computeVals, money, fmtPrice } from '$lib/logic.js';
   import * as api from '$lib/api.js';
@@ -129,12 +132,9 @@
     await Promise.all([loadIdeas(state.tab), loadStatus()]);
   }
   function setAmount(v) { state.amount = v; }
-  async function quickEnter(id, amount) {
-    const card = state.ideas.find((idea) => idea.id === id);
-    if (!card || amount > state.cash || card.currentPrice == null || card.currentPriceError) return;
-    selectIdea(id);
-    setState({ amount: String(amount), orderDirection: card.direction });
-    await place({ ideaId: id, direction: card.direction, amount });
+  async function quickEnter(id) {
+    await selectIdea(id);
+    setState({ tradeOpen: true });
   }
   function setOrderDirection(orderDirection) { setState({ orderDirection, appliedSetup: null, placed: false }); }
   function applyRecommendedSetup() {
@@ -182,9 +182,14 @@
     }
   }
 
-  const actions = { setState, selectIdea, toggleStarredIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition };
+  const actions = { setState, selectIdea, toggleStarredIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition, loadPortfolio };
 
   onMount(() => {
+    const stopTradingSetup = startTradingSetup();
+    if (dev && new URLSearchParams(window.location.search).get('preview') === 'onboarding') {
+      tradingSetup.step = 0;
+      tradingSetup.open = true;
+    }
     const storedStars = JSON.parse(localStorage.getItem(STARRED_IDEAS_KEY) ?? '[]');
     if (!Array.isArray(storedStars) || storedStars.some((id) => typeof id !== 'string')) {
       throw new Error('Invalid saved thesis watchlist');
@@ -198,11 +203,13 @@
     const onResize = () => { if (Math.abs(window.innerWidth - state.vw) > 2) state.vw = window.innerWidth; };
     window.addEventListener('resize', onResize);
     state.vw = window.innerWidth;
-    return () => { clearInterval(statusTimer); clearInterval(portfolioTimer); window.removeEventListener('resize', onResize); };
+    return () => { stopTradingSetup(); clearInterval(statusTimer); clearInterval(portfolioTimer); window.removeEventListener('resize', onResize); };
   });
 
   let vals = $derived(computeVals(state, actions));
 </script>
+
+{#if tradingSetup.open}<TradingOnboarding onPortfolio={()=>setState({portfolioOpen:true,tradeOpen:false})}/>{/if}
 
 <div class="app-root">
   <TopBar {vals} />
@@ -218,11 +225,11 @@
 
     {#if vals.showTradeCta}
       <button class="hov hov-bright8" type="button" onclick={vals.openTrade}
-        style="position:fixed; left:20px; right:20px; bottom:20px; z-index:70; border:0; background:#D8B87E; color:#141414; border-radius:12px; padding:15px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center; font:inherit; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.45)">Trade this <ArrowRight size={16} aria-hidden="true" /></button>
+        style="position:fixed; left:20px; right:20px; bottom:20px; z-index:70; border:0; background:#B5F20B; color:#141414; border-radius:12px; padding:15px; display:flex; align-items:center; justify-content:center; gap:7px; text-align:center; font:inherit; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.45)">Trade this <ArrowRight size={16} aria-hidden="true" /></button>
     {/if}
 
     {#if vals.showTradeBackdrop}
-      <button type="button" aria-label="Close trade ticket" onclick={vals.closeTrade} style="position:fixed; inset:0; border:0; padding:0; background:rgba(6,7,9,0.55); backdrop-filter:blur(2px); z-index:81"></button>
+      <button type="button" aria-label="Close trade ticket" onclick={vals.closeTrade} style="position:fixed; inset:0; border:0; padding:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(2px); z-index:81"></button>
     {/if}
 
     {#if vals.tradeVisible}
@@ -240,9 +247,9 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: #0A0B0D;
-    color: #E7E6E2;
-    font-family: 'Space Grotesk', sans-serif;
+    background: #080808;
+    color: #eeeeee;
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
