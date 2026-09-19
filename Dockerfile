@@ -1,4 +1,5 @@
-FROM node:24-alpine AS build
+# Dynamic's native MPC library requires glibc in both stages.
+FROM node:24-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -8,7 +9,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:24-alpine AS runtime
+FROM node:24-bookworm-slim AS runtime
 
 WORKDIR /app
 
