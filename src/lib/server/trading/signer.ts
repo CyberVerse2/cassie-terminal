@@ -8,7 +8,7 @@ import {readDelegation} from './delegations';
 import {EVM_CHAINS} from './asset-directory.js';
 import {FLASH_ALLOWANCE,authorizeSingleQuote} from './authorization.js';
 import {flash} from './flash';
-import {signerFailure,signingTransaction} from './signing-transaction.js';
+import {signerFailure,signingTransaction,signingTypedData} from './signing-transaction.js';
 export function chainClients(name:string){
   const chain=Object.values(chains).find((c:any)=>c.id===EVM_CHAINS[name]);
   if(!chain)throw Error('This EVM chain has no configured RPC client.');
@@ -24,8 +24,8 @@ export function delegatedSigner(userId:string,walletId:string,address:string){
     return {walletId,walletApiKey:d.decryptedWalletApiKey,keyShare:d.decryptedDelegatedShare};
   }
   return {credentials,
-    typed:async(data:any)=>{try{return await delegatedSignTypedData(client,{...await credentials(),typedData:data});}catch(error){signerFailure(error);}},
-    message:async(message:string)=>{try{return await delegatedSignMessage(client,{...await credentials(),message});}catch(error){signerFailure(error);}},
+    typed:async(data:any)=>{try{return await delegatedSignTypedData(client,{...await credentials(),typedData:signingTypedData(data)});}catch(error){signerFailure(error,'order');}},
+    message:async(message:string)=>{try{return await delegatedSignMessage(client,{...await credentials(),message});}catch(error){signerFailure(error,'order');}},
     transaction:async(transaction:any,chainId:number)=>{try{return await delegatedSignTransaction(client,{...await credentials(),transaction:signingTransaction(transaction,chainId)});}catch(error){signerFailure(error);}},
   };
 }

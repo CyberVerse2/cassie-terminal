@@ -17,7 +17,7 @@ import { refreshAsset, discoverAssets } from './asset-directory.js';
 import { entryInRange, validatedPlan } from '$lib/trading/plan.js';
 import { authorizeSingleQuote } from './authorization.js';
 import { chainClients, signOrder } from './signer';
-import { signerFailure, signingTransaction } from './signing-transaction.js';
+import { signerFailure, signingTransaction, signingTypedData } from './signing-transaction.js';
 import { BASE_USDC_MARKET, requireUsdc } from './usdc.js';
 
 export async function prepareTrade(userId:string,ideaId:string,walletId:string) {
@@ -100,7 +100,7 @@ export async function executeTrade(userId:string,ideaId:string,selectedWalletId:
         if(request.gas>250000n||request.gas*(request.maxFeePerGas??request.gasPrice??0n)>1000000000000000n)throw new Error('Approval gas exceeds the transaction limit.');
         let serialized;
         try{serialized=await delegatedSignTransaction(client,{...await credentials(),transaction:signingTransaction(request,8453)});}
-        catch(error){signerFailure(error);}
+        catch(error){signerFailure(error,'approval');}
         const hash=await rpc.sendRawTransaction({serializedTransaction:serialized as `0x${string}`});
         const receipt=await rpc.waitForTransactionReceipt({hash,timeout:60000});
         if(receipt.status!=='success')throw new Error('Token approval failed.');
@@ -108,9 +108,9 @@ export async function executeTrade(userId:string,ideaId:string,selectedWalletId:
       if(Number(payloads.entry.message.deadline)<=Date.now()/1000+15)throw new Error('Quote expired during wallet setup. Try again.');
       let userSignature, bracketSignature;
       try {
-        userSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.entry});
-        bracketSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.exit});
-      } catch(error){signerFailure(error);}
+        userSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:signingTypedData(payloads.entry)});
+        bracketSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:signingTypedData(payloads.exit)});
+      } catch(error){signerFailure(error,'order');}
       // Persist ambiguity before submitting. Network failures must not free
       // capital or silently submit a second order on the next click.
       await updateOrder(id,'submitting',{quoteId:quote.quoteId});

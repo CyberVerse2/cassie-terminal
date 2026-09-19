@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { signerFailure, signingTransaction } from './signing-transaction.js';
+import { hashTypedData } from 'viem';
+import { signerFailure, signingTransaction, signingTypedData } from './signing-transaction.js';
 
 test('keeps only the Base eip1559 fields Dynamic can sign', () => {
   const signed = signingTransaction({
@@ -28,4 +29,30 @@ test('names a Dynamic 400 instead of Invalid request', () => {
     () => signerFailure({ status: 400, message: 'Invalid request' }),
     { message: 'Dynamic rejected the wallet signature. Cassie asked it to sign a Base token approval.' },
   );
+  assert.throws(
+    () => signerFailure({ status: 400, message: 'Invalid request' }, 'order'),
+    { message: 'Dynamic rejected the wallet signature. Cassie asked it to sign the trade order.' },
+  );
+});
+
+test('gives Dynamic a viem FlashOrder instead of the quote JSON', () => {
+  const signed = signingTypedData({
+    primaryType: 'FlashOrder',
+    types: { EIP712Domain: [], FlashOrder: [{ name: 'swapper', type: 'address' }] },
+    domain: { name: 'DefinitiveFlashAllowance', version: '1', chainId: '8453', verifyingContract: '0x5d00000873b6bf41539e6f5365b0ff7d3c368f78' },
+    message: {
+      swapper: '0x1111111111111111111111111111111111111111',
+      vault: '0x2222222222222222222222222222222222222222',
+      recipient: '0x1111111111111111111111111111111111111111',
+      fromToken: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+      toToken: '0x4200000000000000000000000000000000000006',
+      fromAmount: '100000000',
+      salt: '1',
+      deadline: '1735689600',
+    },
+  });
+  assert.equal(signed.domain.chainId, 8453);
+  assert.equal(signed.message.fromAmount, 100000000n);
+  assert.deepEqual(Object.keys(signed.types), ['FlashOrder']);
+  assert.match(hashTypedData(signed), /^0x[0-9a-f]{64}$/);
 });
