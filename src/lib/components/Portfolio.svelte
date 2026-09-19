@@ -25,14 +25,13 @@
     </div>
   {/if}
 
-  <PortfolioTrading />
-
+  <PortfolioTrading>
   {#if vals.portfolioError}
-    <div role="alert" style="margin-top:14px; border:1px solid rgba(240,76,166,.28); border-radius:9px; background:rgba(240,76,166,.08); padding:10px 12px; color:#FF78B8; font-size:11px">{vals.portfolioError}</div>
+    <div role="alert" style="margin-top:14px; color:#FF78B8; font-size:13px">{vals.portfolioError}</div>
   {/if}
 
-  <p style="margin:26px 0 0;color:#888;font-size:12px">Live wallet balances and Cassie positions</p>
-  <div style="display:flex; gap:40px; align-items:flex-end; margin-top:26px; flex-wrap:wrap">
+  <div style="margin-top:34px; font-size:10px; letter-spacing:0.13em; font-weight:700; color:#6e6e6e">BALANCES</div>
+  <div style="display:flex; gap:40px; align-items:flex-end; margin-top:12px; flex-wrap:wrap">
     <div>
       <div style="font-size:9px; letter-spacing:0.13em; font-weight:700; color:#6e6e6e; margin-bottom:6px">TOTAL</div>
       <div style="font-family:var(--font-mono); font-size:38px; font-weight:600; line-height:1">{vals.totalFmt}</div>
@@ -99,23 +98,21 @@
       {/each}
     </div>
   {/if}
+  </PortfolioTrading>
 </div>
 
 <style>
   .account {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 16px;
     margin-top: 22px;
-    padding: 14px 16px;
-    border: 1px solid #242424;
-    border-radius: 6px;
-    background: #101010;
+    padding-bottom: 4px;
   }
   .account-copy { min-width: 0; }
   .account-email {
-    margin: 5px 0 0;
+    margin: 0;
     color: #e6e6e6;
     font-size: 13px;
     line-height: 1.4;
@@ -124,15 +121,11 @@
   .account-hint { margin: 6px 0 0; color: #8c8c8c; font-size: 12px; line-height: 1.4; }
   .account-btn {
     flex-shrink: 0;
-    height: 36px;
-    padding: 0 14px;
-    border: 1px solid #2e2e2e;
-    border-radius: 4px;
     background: transparent;
-    color: #c8c8c8;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
+    border: 0;
+    padding: 0;
+    color: #8c8c8c;
+    font: 600 11px var(--font-ui);
     cursor: pointer;
   }
   .account-btn:focus-visible { outline: 2px solid #B5F20B; outline-offset: 3px; }
