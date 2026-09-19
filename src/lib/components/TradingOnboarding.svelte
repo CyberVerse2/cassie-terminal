@@ -4,11 +4,14 @@
   import { tradingSetup, approveTradingAccess } from '$lib/trading/session.svelte.js';
   import { validateSettings, usd } from '$lib/trading/settings.js';
   import { authUi } from '$lib/auth-ui.svelte.js';
+  import { executionDelegation } from '$lib/trading/approval.js';
   let { onPortfolio }=$props();
   let dialog, amount=$state(tradingSetup.settings?.amountUsd ?? 200), capital=$state(tradingSetup.settings?.maxDeployedUsd ?? 1000), positions=$state(tradingSetup.settings?.maxPositions ?? 3);
   let busy=$state(false), error=$state('');
   let walletId=$state('');
   const step=$derived(tradingSetup.step);
+  const approvedWallet=$derived(tradingSetup.wallets.find(w=>w.address===tradingSetup.approvedWalletAddress));
+  const executionReady=$derived(executionDelegation(approvedWallet,tradingSetup));
   const names=['Meet Cassie','Your limits','Permissions','First trade'];
   onMount(()=>dialog.showModal());
   function close(){if(!busy)tradingSetup.open=false;}
@@ -41,7 +44,8 @@
     {#if tradingSetup.wallets.filter(w=>w.chain==='EVM').length>1}<label for="trading-wallet">Trading wallet</label><select id="trading-wallet" bind:value={walletId}>{#each tradingSetup.wallets.filter(w=>w.chain==='EVM') as wallet}<option value={wallet.id}>{wallet.address}</option>{/each}</select>{/if}
     {#if !authUi.user}<button class="primary" onclick={()=>{close();authUi.openSignIn();}}>Sign in to approve</button>{:else}<button class="primary" disabled={busy} onclick={save}>{busy?'Confirming wallet permissions…':'Approve trading permissions'} <ArrowRight size={16}/></button>{/if}
   {:else}
-    <div class="symbol"><Check size={30}/></div><h1 id="onboarding-title">You’re in control.<br/>Cassie is ready.</h1><p class="intro">Your wallet permissions are confirmed. Choose a trade using {usd(tradingSetup.settings?.amountUsd ?? amount)} per trade.</p>
+    <div class="symbol"><Check size={30}/></div><h1 id="onboarding-title">Permissions approved.</h1><p class="intro">Dynamic has confirmed your wallet permissions. Your amount per trade is {usd(tradingSetup.settings?.amountUsd ?? amount)}.</p>
+    {#if !executionReady}<p class="muted">{tradingSetup.loading?'Checking Cassie’s trading connection. You can continue exploring.':'Cassie’s trading connection is not ready yet. Your approval is complete; you don’t need to approve again.'}</p>{/if}
     <p class="muted">Fund your wallet in Portfolio. You can change your limits or revoke access there anytime.</p>
     <button class="primary" onclick={close}>Explore my first trade <ArrowRight size={16}/></button><button class="secondary" onclick={()=>{close();onPortfolio?.();}}>Open Portfolio</button>
   {/if}

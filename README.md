@@ -84,8 +84,12 @@ Automatic delegation prompts and mandatory delegation remain off. Matching
 secrets are in the ignored local `.env`; deployment needs those server secrets
 and the new route before deliveries can succeed.
 
-The onboarding now requests Dynamic delegation and waits for a verified webhook
-before confirming success. Server signing also requires `DYNAMIC_API_KEY`; Flash
+The onboarding requests Dynamic delegation and confirms approval using the SDK's
+`hasDelegatedAccess` against refreshed wallet credentials. It does not poll the
+database to decide whether the user approved. Server signing readiness is a
+separate state requiring an active, matching webhook-backed record; Portfolio
+shows that state, and Execute checks it without re-requesting approval.
+Server signing also requires `DYNAMIC_API_KEY`; Flash
 quotes and execution require `DEFINITIVE_API_KEY`. These are server-only values.
 The local database is separate from deployment: a webhook delivered to the live
 app does not automatically reach local development. Deploy the receiver and its

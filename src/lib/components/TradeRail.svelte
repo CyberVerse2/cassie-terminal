@@ -1,18 +1,25 @@
 <script>
-  import { tradingSetup, beginSetup, openSetup } from '$lib/trading/session.svelte.js';
+  import { tradingSetup, beginSetup, openSetup, loadTradingSettings } from '$lib/trading/session.svelte.js';
+  import { executionDelegation } from '$lib/trading/approval.js';
   import { estimateOutcome, usd } from '$lib/trading/settings.js';
   import { authHeaders } from '$lib/dynamic/auth.js';
   import { ArrowUpRight, LoaderCircle, X } from '@lucide/svelte';
   let { vals } = $props();
   let focus = $state('target');
   let submitting=$state(false), executionError=$state(''), executedIdea=$state(null);
-  const activeWallets=$derived(tradingSetup.delegations.filter(w=>!w.revoked&&w.chain==='EVM'));
-  const wallet=$derived(activeWallets.find(w=>w.walletId===tradingSetup.selectedWalletId)||(activeWallets.length===1?activeWallets[0]:null));
+  const approvedWallets=$derived(tradingSetup.wallets.filter(w=>w.delegated&&w.chain==='EVM'));
+  const approvedWallet=$derived(approvedWallets.find(w=>w.address===tradingSetup.approvedWalletAddress)||(approvedWallets.length===1?approvedWallets[0]:null));
   async function execute(){
-    if(!tradingSetup.settings||!wallet){beginSetup();return;}
+    if(!tradingSetup.settings||!approvedWallet){beginSetup();return;}
     const ideaId=vals.aiPlan.ideaId;
+    const owner=tradingSetup.userId, address=approvedWallet.address;
     submitting=true;executionError='';
     try{
+      await loadTradingSettings();
+      if(tradingSetup.userId!==owner)throw new Error('Your account changed. Reopen this trade.');
+      const current=tradingSetup.wallets.find(w=>w.address===address);
+      const wallet=executionDelegation(current,tradingSetup);
+      if(!wallet)throw new Error('Cassie’s trading connection is unavailable. Check its status in Portfolio. Your existing wallet approval does not need to be repeated.');
       const response=await fetch('/api/trading/orders',{method:'POST',headers:{'content-type':'application/json',...authHeaders()},body:JSON.stringify({ideaId,walletId:wallet.walletId})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||'The trade could not be submitted.');

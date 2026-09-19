@@ -4,6 +4,7 @@
   import { tradingSetup, openSetup, createTradingWallet, revokeTradingAccess, loadTradingSettings } from '$lib/trading/session.svelte.js';
   import { usd } from '$lib/trading/settings.js';
   import { authHeaders } from '$lib/dynamic/auth.js';
+  import { executionDelegation } from '$lib/trading/approval.js';
   let error=$state(''), busy=$state(false), copied=$state('');
   let orders=$state([]), ordersError=$state('');
   async function loadOrders(){
@@ -26,7 +27,9 @@
     <div class="wallets">
       {#each tradingSetup.wallets as wallet}
         <div class="wallet"><strong>{wallet.chain==='SOL'?'Solana':'EVM'} wallet</strong><code>{wallet.address}</code><button disabled={busy} onclick={()=>run(()=>copy(wallet))}><Copy size={13}/>{copied===wallet.id?'Copied':'Copy funding address'}</button><p>Send assets only on a compatible network. Transfers do not activate trading permissions.</p>
-          {#if wallet.delegated}<p>Wallet delegation is active.</p><button class="revoke" disabled={busy} onclick={()=>run(()=>revokeTradingAccess(wallet))}><ShieldOff size={14}/>Revoke trading access</button><p>Revocation stops new signatures. It does not cancel orders already submitted.</p>{:else}<p>Trading permissions are off.</p>{/if}
+          {#if wallet.delegated}<p>Wallet permissions approved.</p>
+            {#if executionDelegation(wallet,tradingSetup)}<p>Cassie’s trading connection is ready.</p>{:else}<p>Cassie’s trading connection is unavailable. Your approval is complete; you don’t need to approve again.</p><button disabled={tradingSetup.loading} onclick={loadTradingSettings}>Check trading connection</button>{/if}
+            <button class="revoke" disabled={busy} onclick={()=>run(()=>revokeTradingAccess(wallet))}><ShieldOff size={14}/>Revoke trading access</button><p>Revocation stops new signatures. It does not cancel orders already submitted.</p>{:else}<p>Trading permissions are off.</p>{/if}
         </div>
       {:else}
         <p>Create a wallet to receive funds.</p><div class="wallet-actions"><button disabled={busy} onclick={()=>run(()=>createTradingWallet('EVM'))}>Create EVM wallet</button><button disabled={busy} onclick={()=>run(()=>createTradingWallet('SOL'))}>Create Solana wallet</button></div>

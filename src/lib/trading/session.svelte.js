@@ -4,19 +4,21 @@ import { dynamicClient } from '$lib/dynamic/client.js';
 import { authHeaders } from '$lib/dynamic/auth.js';
 import { authUi } from '$lib/auth-ui.svelte.js';
 import { validateSettings } from './settings.js';
-export const tradingSetup = $state({ userId:null, settings:null, loading:false, error:'', open:false, step:0, wallets:[], delegations:[], selectedWalletId:null, delegationAvailable:false, liveExecutionAvailable:false });
+import { confirmWalletApproval } from './approval.js';
+export const tradingSetup = $state({ userId:null, settings:null, loading:false, error:'', open:false, step:0, wallets:[], delegations:[], selectedWalletId:null, approvedWalletAddress:null, delegationAvailable:false, liveExecutionAvailable:false });
 let generation=0, promptedUser=null;
 export function refreshWallets() {
   tradingSetup.wallets=dynamicClient && dynamicClient.user ? getWalletAccounts().filter(wallet=>isWaasWalletAccount({walletAccount:wallet})).map(wallet=>({...wallet,delegated:hasDelegatedAccess({walletAccount:wallet})})) : [];
+  return tradingSetup.wallets;
 }
 export function openSetup(step=0) { tradingSetup.step=step; tradingSetup.open=true; }
 async function request(method='GET',body) {
-  const response=await fetch('/api/trading/settings',{method,headers:{'content-type':'application/json',...authHeaders()},body:body?JSON.stringify(body):undefined});
+  const response=await fetch('/api/trading/settings',{method,headers:{'content-type':'application/json',...authHeaders()},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
   const data=await response.json();if(!response.ok)throw new Error(data.error||'Could not update settings.');return data;
 }
 export async function loadTradingSettings() {
   const version=++generation,userId=dynamicClient?.user?.id || null;
-  if(userId!==tradingSetup.userId){Object.assign(tradingSetup,{userId,settings:null,error:'',open:false,delegations:[],selectedWalletId:null,delegationAvailable:false,liveExecutionAvailable:false});}
+  if(userId!==tradingSetup.userId){Object.assign(tradingSetup,{userId,settings:null,error:'',open:false,delegations:[],selectedWalletId:null,approvedWalletAddress:null,delegationAvailable:false,liveExecutionAvailable:false});}
   refreshWallets();
   if(!userId){tradingSetup.loading=false;promptedUser=null;return;}
   tradingSetup.loading=true;
@@ -38,25 +40,24 @@ export async function approveTradingAccess(input, walletId) {
   const owner=dynamicClient?.user?.id;
   if(!owner)throw new Error('Sign in to approve trading access.');
   await saveTradingSettings(input);
-  if(!tradingSetup.delegationAvailable)throw new Error('Wallet permissions could not connect. Try again shortly.');
   refreshWallets();
   if(!tradingSetup.wallets.some(w=>w.chain==='EVM'))await createTradingWallet('EVM');
   const wallet=tradingSetup.wallets.find(w=>w.id===walletId&&w.chain==='EVM')||tradingSetup.wallets.find(w=>w.chain==='EVM');
   if(!wallet)throw new Error('Your trading wallet could not be created.');
   if(dynamicClient?.user?.id!==owner)throw new Error('Your account changed. Reopen trading setup.');
-  if(!hasDelegatedAccess({walletAccount:wallet}))await delegateWaasKeyShares({walletAccount:wallet});
-  refreshWallets();
-  // Success means the signed webhook arrived, not just that the SDK resolved.
-  for(let attempt=0;attempt<15;attempt++){
-    if(dynamicClient?.user?.id!==owner)throw new Error('Your account changed. Reopen trading setup.');
-    const data=await request();
-    if(dynamicClient?.user?.id!==owner)throw new Error('Your account changed.');
-    Object.assign(tradingSetup,data);
-    const confirmed=data.delegations?.find(d=>!d.revoked&&d.address?.toLowerCase()===wallet.address.toLowerCase());
-    if(confirmed){tradingSetup.selectedWalletId=confirmed.walletId;return;}
-    await new Promise(resolve=>setTimeout(resolve,2000));
-  }
-  throw new Error('Your wallet approved access. Cassie is still waiting for confirmation. Try again to check its status; you won’t need to approve twice.');
+  const approved=await confirmWalletApproval({
+    wallet,
+    hasAccess:w=>hasDelegatedAccess({walletAccount:w}),
+    delegate:async w=>{
+      if(!tradingSetup.delegationAvailable)throw new Error('Cassie’s trading connection is unavailable. Your limits are saved; please try setup later.');
+      await delegateWaasKeyShares({walletAccount:w});
+    },
+    refresh:refreshWallets,
+    assertOwner:()=>{if(dynamicClient?.user?.id!==owner)throw new Error('Your account changed. Reopen trading setup.');},
+  });
+  tradingSetup.approvedWalletAddress=approved.address;
+  // Refresh signing readiness independently; it is not an approval condition.
+  void loadTradingSettings();
 }
 export async function revokeTradingAccess(wallet) {
   const delegation=tradingSetup.delegations.find(d=>d.address?.toLowerCase()===wallet.address.toLowerCase());
