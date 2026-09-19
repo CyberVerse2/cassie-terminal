@@ -98,7 +98,7 @@
       <div class="outcome-copy" class:loss={focus==='stop'} aria-live="polite">
         {#if estimate}
           <p class="outcome-amount">{estimate.pnl>=0?'+':'−'}{usd(Math.abs(estimate.pnl))}</p>
-          <p class="outcome-caption">Estimated {focus==='target'?'profit':'loss'} at {usd(estimate.exit)} · before {preview?'exit ':''}fees</p>
+          <p class="outcome-caption">Estimated {focus==='target'?'profit':'loss'} {focus==='target'&&vals.aiPlan.executionPlan?.targets.length>1?'across all targets':'at '+usd(estimate.exit)} · before {preview?'exit ':''}fees</p>
         {:else if tradingSetup.settings}<p class="outcome-caption">A dollar estimate needs valid entry and exit prices for this asset.</p>{/if}
         <p class="outcome-body">{focus==='target' ? (vals.aiPlan.target || 'I still need a take-profit target for this thesis.') : (vals.aiPlan.stop || 'I still need an exit condition to protect this trade.')}</p>
       </div>
@@ -110,7 +110,7 @@
         </details>
       {/if}
       <div class="execution">
-        {#if preview}<p class="execution-status">{preview.asset.symbol} on Base{preview.asset.issuer ? ` · ${preview.asset.issuer} tokenized stock` : ''}. Execution through Definitive.</p>{/if}
+        {#if preview}<p class="execution-status">{preview.asset.symbol} on {preview.asset.chain}{preview.asset.issuer ? ` · ${preview.asset.issuer} tokenized stock` : ''}. Execution through Definitive.</p>{/if}
         {#if previewLoading}<p class="execution-status" role="status">Checking the live execution quote…</p>{/if}
         {#if previewError}<p class="execution-error" role="status">{previewError}</p><button class="settings-note" onclick={()=>previewVersion++}>Check again</button>{/if}
         {#if tradingSetup.settings}<button class="settings-note" onclick={()=>openSetup(1)}>Using {usd(tradingSetup.settings.amountUsd)} · your trading settings</button>{/if}

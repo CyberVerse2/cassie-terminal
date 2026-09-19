@@ -3,7 +3,7 @@ import { listOrders, updateOrder } from './orders';
 import { positionStatus } from './position-status.js';
 export async function reconcileOrders(userId:string){
   const orders=await listOrders(userId);
-  await Promise.allSettled(orders.filter(o=>o.providerOrderId&&!['closed','rejected'].includes(String(o.status))).map(async o=>{
+  await Promise.allSettled(orders.filter(o=>!(o.plan as any)?.version&&o.providerOrderId&&!['closed','rejected'].includes(String(o.status))).map(async o=>{
     const query=`?funderAddress=${encodeURIComponent(String(o.address))}`;
     const entry=await flash(`/orders/${encodeURIComponent(String(o.providerOrderId))}${query}`);
     if(entry.order?.orderId!==o.providerOrderId)throw new Error('Entry identity mismatch.');

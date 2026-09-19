@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test": "node --test src/lib/trading/*.test.js src/lib/server/trading/*.test.js",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",

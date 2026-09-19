@@ -10,6 +10,6 @@ export async function GET({request,url}) {
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ideaId)||! /^[a-zA-Z0-9_-]{1,128}$/.test(walletId))return json({error:'Invalid trade or wallet.'},{status:400,headers});
   try {
     const {market,entry,intent}=await prepareTrade(user.userId,ideaId,walletId);
-    return json({asset:{symbol:market.symbol??intent.ticker,chain:market.chain,address:market.address,issuer:market.issuer??null},entryPrice:entry/(market.multiplier??1),amountUsd:Number(intent.amount),quotedAt:Date.now(),expiresAt:Date.now()+20000},{headers});
+    return json({asset:{symbol:market.symbol??intent.ticker,chain:market.chain,address:market.address,issuer:market.issuer??null},entryPrice:entry,amountUsd:Number(intent.amount),quotedAt:Date.now(),expiresAt:Date.now()+20000},{headers});
   }catch(error){return json({error:error instanceof Error?error.message:'Execution preview is unavailable.'},{status:409,headers});}
 }

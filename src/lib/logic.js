@@ -1,9 +1,7 @@
 import { dollarLevel } from './trading/settings.js';
 
-// View-model builder for the Cassie terminal, over the cassie-indexer read API.
-// No synthetic market data: every value here is either a live API field or a
-// deterministic presentation transform of one. The trade rail is client-side
-// paper trading — the indexer holds no trading keys (execution lives elsewhere).
+// View-model builder for the Cassie terminal. Every value here is a live API
+// field or a deterministic presentation transform of one.
 
 export const FEED_TABS = [
   { label: 'All', key: 'all' },
@@ -11,7 +9,7 @@ export const FEED_TABS = [
   { label: 'Tokens', key: 'tokens' },
 ];
 
-export const PAPER_START_CASH = 25000;
+
 const HORIZONS = [
   { value: 'immediate', label: '≤3D', title: 'Immediate, through 3 days' },
   { value: 'short-term', label: '4D–4W', title: 'Short term, 4 days through 4 weeks' },
@@ -36,18 +34,11 @@ export const initialState = {
   starredIdeaIds: [],
   author: null, // track record for the selected idea's author
   status: null, // { lastFetchAt, routedIdeas }
-  // trade rail (paper)
-  amount: '',
-  orderDirection: null,
-  appliedSetup: null,
-  placed: false,
-  placedInfo: '',
-  cash: PAPER_START_CASH,
+  cash: 0, totalUsd:null,
   positions: [],
   closedPositions: [],
   portfolioError: null,
   tradeError: null,
-  tradeSubmitting: false,
   closingPositionId: null,
   // ui / responsive
   vw: typeof window !== 'undefined' ? window.innerWidth : 1280,
@@ -89,7 +80,6 @@ function convictionTier(c) {
   return { word: 'MEDIUM', color: '#C9CBD2', bd: 'rgba(201,203,210,0.3)' }; // medium or null
 }
 const iconText = (ticker) => (ticker || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase();
-// ---------- paper-portfolio math ----------
 function posCalc(p) {
   return { val: p.currentValueUsd, pnl: p.pnlUsd };
 }
@@ -121,11 +111,11 @@ export function computeVals(state, actions) {
   const showBack = isNarrow && S.mobileScreen === 'terminal';
   const showSearch = true;
 
-  // ---- paper portfolio ----
+  // ---- live portfolio ----
   const calcs = S.positions.map((p) => posCalc(p));
-  const deployed = calcs.reduce((a, c) => a + c.val, 0);
-  const upnl = calcs.reduce((a, c) => a + c.pnl, 0);
-  const total = S.cash + deployed;
+  const deployed = calcs.reduce((a, c) => a + (c.val??0), 0);
+  const upnl = calcs.reduce((a, c) => a + (c.pnl??0), 0);
+  const total = S.totalUsd;
   const positionKind = (p) => p.instrument === 'perp' ? 'perps'
     : p.instrument === 'shares' ? 'stocks'
       : p.instrument === 'spot' ? 'tokens' : 'markets';
@@ -136,17 +126,17 @@ export function computeVals(state, actions) {
     { label: 'Tokens', v: byKind('tokens'), color: '#8DAA53' },
     { label: 'Markets', v: byKind('markets'), color: '#71944C' },
     { label: 'Available', v: S.cash, color: '#333333' },
-  ].filter((s) => s.v > 0.01 || s.label === 'Available').map((s) => ({ ...s, w: ((s.v / total) * 100).toFixed(1) + '%', pct: ((s.v / total) * 100).toFixed(0) + '%' }));
+  ].filter((s) => s.v > 0.01 || s.label === 'Available').map((s) => ({ ...s, w: (total>0?(s.v / total)*100:0).toFixed(1) + '%', pct: (total>0?(s.v / total)*100:0).toFixed(0) + '%' }));
   const posRows = S.positions.map((p, i) => {
     const c = calcs[i];
     return {
       market: p.marketLabel, venue: p.venue.toUpperCase(), dir: dirWord(p.direction), dirColor: dirColor(p.direction),
       sizeFmt: money(p.collateralUsd), entryNow: fmtPrice(p.entryPrice) + ' → ' + fmtPrice(p.currentMarkPrice),
-      pnlFmt: (c.pnl >= 0 ? '+' : '') + money(c.pnl).replace('$-', '-$'),
+      pnlFmt: c.pnl===null?'—':(c.pnl >= 0 ? '+' : '') + money(c.pnl),
       pnlColor: signColor(c.pnl),
       markError: p.markError,
       closing: S.closingPositionId === p.id,
-      close: () => actions.closePosition(p.id),
+      close: p.canClose?() => actions.closePosition(p.id):null,
     };
   });
   const closedRows = S.closedPositions.map((p) => ({
@@ -221,11 +211,7 @@ export function computeVals(state, actions) {
     const d = S.detail && S.detail.id === S.selId ? S.detail : null; // full detail (may be loading)
     const tier = convictionTier(sel.conviction);
     const priceErr = !!sel.currentPriceError;
-    const a = parseFloat(S.amount) || 0;
-    const valid = a > 0 && a <= S.cash && !priceErr && sel.currentPrice != null && !S.tradeSubmitting;
     const callSide = dirWord(sel.direction);
-    const selectedDirection = S.orderDirection ?? sel.direction;
-    const orderSide = dirWord(selectedDirection);
     const setup = d?.recommendedSetup ?? null;
     const groupMembers = sel.groupMembers ?? [sel];
 
@@ -294,6 +280,7 @@ export function computeVals(state, actions) {
       } : null,
       // AI trade-plan presentation uses the selected idea's existing analysis.
       aiPlan: setup ? {
+        executionPlan:d?.executionPlan??null,executionAsset:d?.executionAsset??null,
         ideaId: sel.id,
         thesis: d?.thesis || null,
         action: setup.side === 'long' ? 'buy' : setup.side === 'short' ? 'short' : setup.side === 'yes' ? 'buy Yes on' : setup.side === 'no' ? 'buy No on' : null,
@@ -302,54 +289,13 @@ export function computeVals(state, actions) {
         instrument: sel.instrument,
         side: setup.side,
         entry: !priceErr && sel.currentPrice != null ? fmtPrice(sel.currentPrice) : null,
-        target: setup.target?.text || null,
-        stop: setup.stop?.text || null,
+        target: d?.executionPlan?.targets.map(t=>`Sell ${t.percent}% at ${fmtPrice(t.price)}`).join(', ') || setup.target?.text || null,
+        stop: d?.executionPlan ? `Exit at ${fmtPrice(d.executionPlan.stopPrice)}. ${d.executionPlan.invalidation}` : setup.stop?.text || null,
         targetLevel: dollarLevel(setup.target?.text) ? fmtPrice(dollarLevel(setup.target?.text)) : null,
         stopLevel: dollarLevel(setup.stop?.text) ? fmtPrice(dollarLevel(setup.stop?.text)) : null,
-        reason: d?.alphaDrivers?.[0] || null,
+        reason: d?.executionPlan?.reason || d?.alphaDrivers?.[0] || null,
         horizon: setup.horizon?.text || null,
       } : null,
-      // trade rail
-      orderSide, orderTicker: sel.ticker, orderPrice: priceErr ? '—' : fmtPrice(sel.currentPrice),
-      recommendedSetupTags: setup ? [
-        { value: dirWord(setup.side).toUpperCase(), color: dirColor(setup.side) },
-        { value: 'MARKET', color: '#C9CBD2' },
-        { value: HORIZONS.find((option) => option.value === sel.horizon)?.label ?? 'OPEN', color: '#9A9CA3' },
-      ] : [],
-      recommendedPlanRows: setup ? [
-        { label: 'Target', value: setup.target?.text || 'Missing' },
-        { label: 'Stop', value: setup.stop?.text || 'Missing' },
-      ] : [],
-      setupLoading: S.detailLoading,
-      setupApplied: !!S.appliedSetup,
-      setupIncomplete: !!setup && !setup.complete,
-      setupMessage: setup && !setup.complete
-        ? `Missing ${setup.missing.join(', ')}`
-        : 'Applies the full plan to this paper trade.',
-      canApplySetup: !!setup?.complete && !S.appliedSetup,
-      applySetupLabel: S.detailLoading
-        ? 'Loading setup…'
-        : S.appliedSetup ? 'Applied' : setup?.complete ? 'Use' : 'Incomplete',
-      applyRecommendedSetup: () => actions.applyRecommendedSetup(),
-      sideOptions: (sel.category === 'markets'
-        ? [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]
-        : [{ value: 'long', label: 'Long' }, { value: 'short', label: 'Short' }]
-      ).map((option) => ({
-        ...option,
-        selected: selectedDirection === option.value,
-        onClick: () => actions.setOrderDirection(option.value),
-      })),
-      positionSizeFmt: valid
-        ? (a / sel.currentPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })
-        : '—',
-      estimatedEntryFmt: priceErr ? '—' : fmtPrice(sel.currentPrice),
-      estimatedFeeFmt: '—',
-      quickChips: ['100', '500', '1000', 'Max'].map((q) => ({ label: q === 'Max' ? 'Max' : '$' + Number(q).toLocaleString('en-US'), onClick: () => actions.setAmount(q === 'Max' ? S.cash.toFixed(2) : q) })),
-      canPlace: valid,
-      placeBg: valid ? '#B5F20B' : '#202020', placeFg: valid ? '#141414' : '#6C6E75',
-      placeCursor: valid ? 'pointer' : 'not-allowed',
-      placeLabel: S.tradeSubmitting ? 'Placing…' : priceErr ? 'Price unavailable' : a > S.cash ? 'Insufficient balance' : 'Place trade',
-      place: () => actions.place(),
     };
   }
 
@@ -360,7 +306,6 @@ export function computeVals(state, actions) {
     ideasLoading: S.ideasLoading, ideasError: S.ideasError,
     ideasEmpty: !S.ideasLoading && !S.ideasError && S.ideas.length === 0,
     ideasFilteredEmpty: !S.ideasLoading && !S.ideasError && S.ideas.length > 0 && visibleIdeas.length === 0,
-    notPlaced: !S.placed, placed: S.placed, placedInfo: S.placedInfo,
     statusLine: S.status?.lastFetchAt ? (statusAge ? `live · ${statusAge} ago` : 'live') : 'connecting…',
     routedCount: S.status?.routedIdeas ?? null,
     // layout
@@ -375,16 +320,13 @@ export function computeVals(state, actions) {
       return { portfolioOpen, ...(portfolioOpen ? { tradeOpen: false } : {}) };
     }),
     onAuthChanged: () => actions.loadPortfolio(),
-    resetTrade: () => setState({ placed: false, amount: '', appliedSetup: null }),
     feedItems, filterTabs, horizonOptions, horizonValue: S.horizon,
     onHorizonChange: (e) => actions.setHorizon(e.currentTarget.value),
     query: S.query, onSearch: (e) => actions.setQuery(e.currentTarget.value),
     clearSearch: () => actions.setQuery(''),
     refreshFeed: () => actions.refreshFeed(),
     refreshing: S.ideasLoading,
-    amount: S.amount,
-    onAmount: (e) => actions.setAmount(e.target.value.replace(/[^0-9.]/g, '')),
-    cashFmt: money(S.cash), totalFmt: money(total), deployedFmt: money(deployed),
+    cashFmt: money(S.cash), totalFmt: total===null?'—':money(total), deployedFmt: money(deployed),
     upnlFmt: (upnl >= 0 ? '+' : '') + money(upnl), upnlColor: signColor(upnl),
     upnlPositive: upnl >= 0, upnlBg: upnl >= 0 ? 'rgba(181,242,11,0.12)' : 'rgba(240,76,166,0.12)',
     upnlPctFmt: (upnl >= 0 ? '+' : '−') + Math.abs(total - upnl === 0 ? 0 : (upnl / (total - upnl)) * 100).toFixed(2) + '%',

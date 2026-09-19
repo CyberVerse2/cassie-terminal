@@ -32,6 +32,6 @@ export async function updateOrder(id:string,status:string,result:unknown,provide
 export async function listOrders(userId:string) {
   await ensureOrders();
   return db.execute(sql`SELECT id,idea_id AS "ideaId",amount,status,asset,intent->>'address' AS address,
-    intent->>'ticker' AS ticker,provider_order_id AS "providerOrderId",provider_result AS result
+    intent->>'ticker' AS ticker,intent->'plan' AS plan,provider_order_id AS "providerOrderId",provider_result AS result
     FROM cassie_live_orders WHERE user_id=${userId} ORDER BY created_at DESC LIMIT 100`);
 }

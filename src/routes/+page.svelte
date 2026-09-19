@@ -29,11 +29,14 @@
 
   async function loadPortfolio() {
     try {
-      const paper = await api.fetchPaperPortfolio();
+      const owner=tradingSetup.userId;
+      if(!owner)return;
+      const portfolio = await api.fetchLivePortfolio();
+      if(owner!==tradingSetup.userId)return;
       setState({
-        cash: paper.cashUsd,
-        positions: paper.openPositions,
-        closedPositions: paper.closedPositions,
+        cash: portfolio.cashUsd, totalUsd:portfolio.totalUsd,
+        positions: portfolio.openPositions,
+        closedPositions: portfolio.closedPositions,
         portfolioError: null,
       });
     } catch (e) {
@@ -81,8 +84,8 @@
   async function selectIdea(id) {
     const card = state.ideas.find((c) => c.id === id);
     setState({
-      selId: id, mobileScreen: 'terminal', placed: false, amount: '',
-      orderDirection: null, appliedSetup: null, detail: null, detailError: null, detailLoading: true, author: null, tradeError: null,
+      selId: id, mobileScreen: 'terminal',
+      detail: null, detailError: null, detailLoading: true, author: null, tradeError: null,
     });
     const token = ++detailToken;
     try {
@@ -131,49 +134,15 @@
   async function refreshFeed() {
     await Promise.all([loadIdeas(state.tab), loadStatus()]);
   }
-  function setAmount(v) { state.amount = v; }
   async function quickEnter(id) {
     await selectIdea(id);
     setState({ tradeOpen: true });
-  }
-  function setOrderDirection(orderDirection) { setState({ orderDirection, appliedSetup: null, placed: false }); }
-  function applyRecommendedSetup() {
-    const setup = state.detail?.recommendedSetup;
-    if (!setup?.complete) return;
-    setState({ orderDirection: setup.side, appliedSetup: setup, placed: false });
-  }
-
-  async function place(overrides = {}) {
-    const sel = state.ideas.find((x) => x.id === state.selId) || state.detail;
-    if (!sel || sel.currentPrice == null || sel.currentPriceError) return;
-    const a = overrides.amount ?? (parseFloat(state.amount) || 0);
-    if (a <= 0 || a > state.cash) return;
-    const side = overrides.direction ?? state.orderDirection ?? sel.direction;
-    const direction = DIR[side] || 'Long';
-    const setup = state.appliedSetup;
-    setState({ tradeSubmitting: true, tradeError: null });
-    try {
-      const result = await api.placePaperOrder({
-        ideaId: overrides.ideaId ?? sel.id,
-        direction: side,
-        amountUsd: a,
-      });
-      await loadPortfolio();
-      setState({
-        placed: true,
-        tradeOpen: true,
-        tradeSubmitting: false,
-        placedInfo: `${direction} · ${result.position.marketLabel} · ${money(a)}, paper fill at ${fmtPrice(result.position.entryPrice)}.${setup ? ' Recommended setup attached.' : ''}`,
-      });
-    } catch (e) {
-      setState({ tradeSubmitting: false, tradeError: String(e?.message ?? e) });
-    }
   }
 
   async function closePosition(id) {
     setState({ closingPositionId: id, portfolioError: null });
     try {
-      await api.closePaperPosition(id);
+      await api.closeLivePosition(id);
       await loadPortfolio();
     } catch (e) {
       state.portfolioError = String(e?.message ?? e);
@@ -182,7 +151,9 @@
     }
   }
 
-  const actions = { setState, selectIdea, toggleStarredIdea, setTab, setHorizon, setQuery, refreshFeed, setAmount, quickEnter, setOrderDirection, applyRecommendedSetup, place, closePosition, loadPortfolio };
+  $effect(()=>{tradingSetup.userId;setState({cash:0,totalUsd:null,positions:[],closedPositions:[],portfolioError:null});void loadPortfolio();});
+
+  const actions = { setState, selectIdea, toggleStarredIdea, setTab, setHorizon, setQuery, refreshFeed, quickEnter, closePosition, loadPortfolio };
 
   onMount(() => {
     const stopTradingSetup = startTradingSetup();
@@ -199,11 +170,12 @@
     loadIdeas(state.tab);
     loadPortfolio();
     const statusTimer = setInterval(loadStatus, 60_000);
+    const feedTimer = setInterval(()=>{if(!document.hidden&&!state.ideasLoading)loadIdeas(state.tab);},60_000);
     const portfolioTimer = setInterval(loadPortfolio, 30_000);
     const onResize = () => { if (Math.abs(window.innerWidth - state.vw) > 2) state.vw = window.innerWidth; };
     window.addEventListener('resize', onResize);
     state.vw = window.innerWidth;
-    return () => { stopTradingSetup(); clearInterval(statusTimer); clearInterval(portfolioTimer); window.removeEventListener('resize', onResize); };
+    return () => { stopTradingSetup(); clearInterval(statusTimer); clearInterval(feedTimer); clearInterval(portfolioTimer); window.removeEventListener('resize', onResize); };
   });
 
   let vals = $derived(computeVals(state, actions));

@@ -1,8 +1,26 @@
 import { parseUnits } from 'viem';
+import { EVM_CHAINS } from './asset-directory.js';
 export const FLASH_ALLOWANCE = '0x5d00000873b6bf41539e6f5365b0ff7d3c368f78';
 export const BASE_USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
 const same = (a,b) => typeof a==='string' && typeof b==='string' && a.toLowerCase()===b.toLowerCase();
 const fields=[['swapper','address'],['vault','address'],['recipient','address'],['fromToken','address'],['toToken','address'],['fromAmount','uint256'],['salt','uint256'],['deadline','uint256']];
+
+export function authorizeSingleQuote(quote,order,decimals) {
+  const buy=order.side==='buy',cross=order.targetChain!==order.contraChain;
+  const source=buy?order.contraChain:order.targetChain;
+  if(!EVM_CHAINS[source]||!EVM_CHAINS[order.targetChain]||!EVM_CHAINS[order.contraChain])throw Error('Unsupported signing chain.');
+  if(quote.orderType!==order.orderType||quote.side!==order.side||!same(quote.targetAsset,order.targetAsset)||!same(quote.contraAsset,order.contraAsset)||quote.from?.asset!==(buy?'contra':'target')||quote.from.amount!==order.qty||!(Number(quote.to?.amount)>0))throw Error('Quote does not match the approved order.');
+  if(cross&&(order.orderType!=='market'||!quote.bridgeQuoteId||!same(order.recipientAddress,order.funderAddress)))throw Error('Invalid cross-chain destination.');
+  if(!quote.evm?.orderTypedData||quote.evm.permitTypedData)throw Error('Unsupported signing path.');
+  const data=JSON.parse(quote.evm.orderTypedData),m=data.message,d=data.domain;
+  if(JSON.stringify(data.types?.FlashOrder?.map(f=>[f.name,f.type]))!==JSON.stringify(fields)||data.primaryType!=='FlashOrder'||d?.name!=='DefinitiveFlashAllowance'||d.version!=='1'||Number(d.chainId)!==EVM_CHAINS[source]||!same(d.verifyingContract,FLASH_ALLOWANCE))throw Error('Unexpected signing domain or schema.');
+  if(!same(m?.swapper,order.funderAddress)||!same(m.recipient,order.funderAddress)||!/^0x[a-f0-9]{40}$/i.test(m.vault)||/^0x0{40}$/i.test(m.vault))throw Error('Invalid trade recipient or vault.');
+  const received=cross?'0x000000000000000000000000000000000defdead':buy?order.targetAsset:order.contraAsset;
+  if(!same(m.fromToken,buy?order.contraAsset:order.targetAsset)||!same(m.toToken,received)||BigInt(m.fromAmount)!==parseUnits(order.qty,decimals)||BigInt(m.fromAmount)<=0n)throw Error('Unexpected token transfer or amount.');
+  const conditional=order.side==='sell'&&order.orderType==='stop-loss'&&!cross;
+  if(!/^\d+$/.test(String(m.deadline))||!/^\d+$/.test(String(m.salt))||Number(m.deadline)<=Date.now()/1000||(!conditional&&Number(m.deadline)>Date.now()/1000+600)||(conditional&&m.deadline!=='281474976710655'))throw Error('Invalid signing lifetime.');
+  return data;
+}
 
 // The signer accepts only a provider quote bound to an existing reservation.
 // It never accepts raw signing payloads supplied by a browser or an agent.

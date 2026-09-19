@@ -60,14 +60,5 @@ export async function fetchTradeGroups({ tab = 'all', limit = 60, signal } = {})
 }
 
 
-export function fetchPaperPortfolio({ signal } = {}) {
-  return getJSON('/paper/portfolio', { signal });
-}
-
-export function placePaperOrder(input) {
-  return postJSON('/paper/orders', input);
-}
-
-export function closePaperPosition(positionId) {
-  return postJSON(`/paper/positions/${encodeURIComponent(positionId)}/close`);
-}
+export function fetchLivePortfolio({ signal } = {}) { return getJSON('/trading/portfolio', { signal }); }
+export function closeLivePosition(id) { return postJSON('/trading/positions/'+encodeURIComponent(id)+'/close'); }

@@ -31,7 +31,7 @@
     <div role="alert" style="margin-top:14px; border:1px solid rgba(240,76,166,.28); border-radius:9px; background:rgba(240,76,166,.08); padding:10px 12px; color:#FF78B8; font-size:11px">{vals.portfolioError}</div>
   {/if}
 
-  <p style="margin:26px 0 0;color:#888;font-size:12px">Paper portfolio · simulated balances and positions</p>
+  <p style="margin:26px 0 0;color:#888;font-size:12px">Live wallet balances and Cassie positions</p>
   <div style="display:flex; gap:40px; align-items:flex-end; margin-top:26px; flex-wrap:wrap">
     <div>
       <div style="font-size:9px; letter-spacing:0.13em; font-weight:700; color:#6e6e6e; margin-bottom:6px">TOTAL</div>
@@ -74,7 +74,7 @@
           </div>
           <div style="text-align:right; flex-shrink:0">
             <div style="font-family:var(--font-mono); font-size:14px; color:{p.pnlColor}">{p.pnlFmt}</div>
-            <button class="hov hov-close" type="button" onclick={p.close} disabled={p.closing} style="margin-top:7px; background:transparent; font-size:11px; font-weight:600; color:#8c8c8c; border:1px solid rgba(255,255,255,0.12); border-radius:7px; padding:5px 12px; cursor:{p.closing ? 'wait' : 'pointer'}">{p.closing ? 'Closing…' : 'Close'}</button>
+            {#if p.close}<button class="hov hov-close" type="button" onclick={p.close} disabled={p.closing} style="margin-top:7px; background:transparent; font-size:11px; font-weight:600; color:#8c8c8c; border:1px solid rgba(255,255,255,0.12); border-radius:7px; padding:5px 12px; cursor:{p.closing ? 'wait' : 'pointer'}">{p.closing ? 'Closing…' : 'Close'}</button>{/if}
           </div>
         </div>
       {/each}

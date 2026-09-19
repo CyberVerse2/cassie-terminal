@@ -19,7 +19,11 @@ export function dollarLevel(text) {
 export function estimateOutcome(plan, amount, outcome) {
   if (!['target', 'stop'].includes(outcome)) return null;
   if (!plan || !['spot','shares'].includes(plan.instrument) || plan.side !== 'long') return null;
-  const entry = Number(plan.entryPrice), exit = dollarLevel(outcome === 'target' ? plan.target : plan.stop);
+  const entry = Number(plan.entryPrice), structured=plan.executionPlan;
+  if(structured && (structured.basis!=='cassie'||structured.priceBasis!=='token'||Date.parse(structured.expiresAt)<=Date.now()))return null;
+  const targets=structured?.targets;
+  const weighted=Array.isArray(targets)&&targets.length&&targets.every(t=>Number.isFinite(t.price)&&t.price>0&&Number.isInteger(t.percent)&&t.percent>0)&&targets.reduce((n,t)=>n+t.percent,0)===100?targets.reduce((n,t)=>n+t.price*t.percent/100,0):null;
+  const exit=structured?(outcome==='target'?weighted:structured.stopPrice):dollarLevel(outcome==='target'?plan.target:plan.stop);
   if (!Number.isFinite(entry) || entry <= 0 || !Number.isFinite(amount) || amount <= 0 || !exit) return null;
   if (outcome === 'target' ? exit <= entry : exit >= entry) return null;
   return { pnl: amount * (exit / entry - 1), exit, amount, entry };
