@@ -13,37 +13,45 @@ import { reserveOrder, updateOrder } from './orders';
 import { flash } from './flash';
 import { authorizeQuote, FLASH_ALLOWANCE, BASE_USDC } from './authorization.js';
 import { dollarLevel, validateSettings } from '$lib/trading/settings.js';
+import { resolveStock } from './markets';
+import { tokenExitPrices } from './stock-assets.js';
 
 export async function prepareTrade(userId:string,ideaId:string,walletId:string) {
   const detail=await getIdea(ideaId);
   if(!detail)throw new Error('This trade idea is no longer available.');
   if(detail.direction!=='long'||!['spot','shares'].includes(detail.instrument??''))throw new Error('This idea is not a supported Definitive spot trade.');
-  // Asset identity must be verified by the research pipeline. Never route a
-  // ticker-only match: counterfeit tokens can copy any stock/token symbol.
+  // Stocks resolve against issuer contracts; other spot assets retain the
+  // research pipeline's verified mapping. Never trust a ticker-only search.
   const rows=await db.execute(sql`SELECT market_meta FROM routes WHERE idea_id=${ideaId} AND status='routed' ORDER BY created_at DESC LIMIT 1`);
-  const market=(rows[0]?.market_meta as any)?.definitive;
+  const market=detail.instrument==='shares' ? await resolveStock(detail.ticker) : (rows[0]?.market_meta as any)?.definitive;
   if(market?.chain!=='base'||!/^0x[a-fA-F0-9]{40}$/.test(market.address??'')||!Number.isInteger(market.decimals)||market.decimals<0||market.decimals>36)throw new Error('Cassie has not verified a Definitive token for this idea yet.');
-  const target=dollarLevel(detail.plan.target?.text),stop=dollarLevel(detail.plan.stop?.text),entry=detail.currentPrice;
-  if(!target||!stop||!entry||target<=entry||stop>=entry)throw new Error('This trade needs verified entry, take-profit, and stop-loss prices.');
+  const target=dollarLevel(detail.plan.target?.text), stop=dollarLevel(detail.plan.stop?.text);
+  const levels=detail.instrument==='shares'
+    ? tokenExitPrices(target,stop,market.multiplier,market.price)
+    : {target:String(target),stop:String(stop)};
+  if(!target||!stop||(!market.multiplier&&(!detail.currentPrice||target<=detail.currentPrice||stop>=detail.currentPrice)))throw new Error('This trade needs verified entry, take-profit, and stop-loss prices.');
   const limits=validateSettings(await readSettings(userId));
   const wallets=await delegationStatus(userId);
   const wallet=wallets.find(w=>w.walletId===walletId&&!w.revoked&&w.chain==='EVM');
   if(!wallet)throw new Error('Approve trading permissions first.');
-  return {walletId:String(wallet.walletId),intent:{asset:market.address.toLowerCase(),decimals:market.decimals,address:String(wallet.address),amount:String(limits.amountUsd),maxCapital:String(limits.maxDeployedUsd),ticker:detail.ticker,target:String(target),stop:String(stop)}};
+  const intent={asset:market.address.toLowerCase(),decimals:market.decimals,address:String(wallet.address),amount:String(limits.amountUsd),maxCapital:String(limits.maxDeployedUsd),ticker:detail.ticker,...levels};
+  const order={targetChain:'base',contraChain:'base',targetAsset:intent.asset,contraAsset:BASE_USDC,side:'buy',qty:intent.amount,orderType:'market',maxSlippage:'0.01',funderAddress:intent.address};
+  const bracket={takeProfit:{notionalPrice:intent.target},stopLoss:{notionalPrice:intent.stop}};
+  const quote=await flash('/quote',{...order,attachedBracket:bracket});
+  const payloads=authorizeQuote(quote,intent);
+  const entry=Number(intent.amount)/Number(quote.to.amount);
+  if(!Number.isFinite(entry)||entry<=Number(intent.stop)||entry>=Number(intent.target))throw new Error('The live execution price is outside this trade’s exit levels.');
+  return {walletId:String(wallet.walletId),intent,market,order,bracket,quote,payloads,entry};
 }
 
 export async function executeTrade(userId:string,ideaId:string,selectedWalletId:string) {
-  const {walletId,intent}=await prepareTrade(userId,ideaId,selectedWalletId);
+  const {walletId,intent,order,bracket,quote,payloads}=await prepareTrade(userId,ideaId,selectedWalletId);
   const id=await reserveOrder(userId,walletId,ideaId,intent);
   let submitted=false;
   try {
     return await db.transaction(async tx=>{
       // One transaction sequence per wallet, across processes and devices.
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${walletId},0))`);
-      const order={targetChain:'base',contraChain:'base',targetAsset:intent.asset,contraAsset:BASE_USDC,side:'buy',qty:intent.amount,orderType:'market',maxSlippage:'0.01',funderAddress:intent.address};
-      const bracket={takeProfit:{notionalPrice:intent.target},stopLoss:{notionalPrice:intent.stop}};
-      const quote=await flash('/quote',{...order,attachedBracket:bracket});
-      const payloads=authorizeQuote(quote,intent);
       const client=createDelegatedEvmWalletClient({environmentId:publicEnv.PUBLIC_DYNAMIC_ENVIRONMENT_ID,apiKey:env.DYNAMIC_API_KEY});
       const rpc=createPublicClient({chain:base,transport:http(env.BASE_RPC_URL||undefined)});
       const txBuilder=createWalletClient({chain:base,transport:http(env.BASE_RPC_URL||undefined)});

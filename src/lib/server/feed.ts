@@ -29,20 +29,20 @@ function baseQuery() {
 function tabFilter(tab: string): SQL | undefined {
   switch (tab) {
     case 'perps':
-      return sql`${routes.instrument} = 'perp' and ${routes.ticker} not like 'xyz:%'`;
+      return sql`false`;
     case 'stocks':
-      return sql`${routes.instrument} = 'shares' or ${routes.ticker} like 'xyz:%'`;
+      return eq(routes.instrument, 'shares');
     case 'tokens':
       return eq(routes.instrument, 'spot');
     case 'markets':
-      return eq(routes.instrument, 'prediction');
+      return sql`false`;
     default:
       return undefined;
   }
 }
 
 export async function listIdeas(tab: string, limit: number, cursor: string | null) {
-  const filters: SQL[] = [eq(routes.status, 'routed')];
+  const filters: SQL[] = [eq(routes.status, 'routed'), sql`${routes.instrument} IN ('shares', 'spot')`];
   const routeTab = tabFilter(tab);
   if (routeTab) filters.push(routeTab);
   if (cursor) filters.push(lt(tradeIdeas.postedAt, new Date(cursor)));
@@ -81,7 +81,7 @@ export async function listIdeas(tab: string, limit: number, cursor: string | nul
 }
 
 export async function listTradeCandidates(limit: number, tab = 'all') {
-  const filters: SQL[] = [eq(routes.status, 'routed')];
+  const filters: SQL[] = [eq(routes.status, 'routed'), sql`${routes.instrument} IN ('shares', 'spot')`];
   const routeTab = tabFilter(tab);
   if (routeTab) filters.push(routeTab);
   const rows = (await baseQuery()

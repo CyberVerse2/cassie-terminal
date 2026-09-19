@@ -7,10 +7,8 @@ import { dollarLevel } from './trading/settings.js';
 
 export const FEED_TABS = [
   { label: 'All', key: 'all' },
-  { label: 'Perps', key: 'perps' },
   { label: 'Stocks', key: 'stocks' },
   { label: 'Tokens', key: 'tokens' },
-  { label: 'Markets', key: 'markets' },
 ];
 
 export const PAPER_START_CASH = 25000;

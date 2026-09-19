@@ -7,8 +7,30 @@
   let { vals } = $props();
   let focus = $state('target');
   let submitting=$state(false), executionError=$state(''), executedIdea=$state(null);
+  let preview=$state(null), previewError=$state(''), previewLoading=$state(false), previewVersion=$state(0);
   const approvedWallets=$derived(tradingSetup.wallets.filter(w=>w.delegated&&w.chain==='EVM'));
   const approvedWallet=$derived(approvedWallets.find(w=>w.address===tradingSetup.approvedWalletAddress)||(approvedWallets.length===1?approvedWallets[0]:null));
+  const executionWallet=$derived(executionDelegation(approvedWallet,tradingSetup));
+  $effect(()=>{
+    const ideaId=vals.aiPlan?.ideaId, walletId=executionWallet?.walletId;
+    const owner=tradingSetup.userId, amount=tradingSetup.settings?.amountUsd;
+    previewVersion;
+    preview=null;previewError='';previewLoading=false;
+    if(!ideaId||!walletId||!owner||!amount)return;
+    const controller=new AbortController();
+    previewLoading=true;
+    (async()=>{
+      try{
+        const response=await fetch(`/api/trading/quote?ideaId=${encodeURIComponent(ideaId)}&walletId=${encodeURIComponent(walletId)}`,{headers:authHeaders(),signal:controller.signal});
+        const result=await response.json();
+        if(controller.signal.aborted)return;
+        if(!response.ok)throw new Error(result.error||'The execution quote is unavailable.');
+        preview=result;
+      }catch(e){if(!controller.signal.aborted)previewError=e.message;}
+      finally{if(!controller.signal.aborted)previewLoading=false;}
+    })();
+    return ()=>controller.abort();
+  });
   async function execute(){
     if(!tradingSetup.settings||!approvedWallet){beginSetup();return;}
     const ideaId=vals.aiPlan.ideaId;
@@ -29,7 +51,7 @@
   $effect(() => { vals.orderTicker; focus = 'target'; });
 
   const bookRows = $derived(vals.posRows || []);
-  const estimate = $derived(estimateOutcome(vals.aiPlan, tradingSetup.settings?.amountUsd, focus));
+  const estimate = $derived(estimateOutcome(preview?{...vals.aiPlan,entryPrice:preview.entryPrice}:vals.aiPlan, tradingSetup.settings?.amountUsd, focus));
 </script>
 
 <aside class="trade-rail" style={vals.tradeContainerStyle} aria-label="AI trade plan">
@@ -61,7 +83,7 @@
           <circle cx="244" cy="28" r="3.5" class="profit-node" />
           <circle cx="244" cy="103" r="3.5" class="stop-node" />
           <text x="90" y="44" text-anchor="middle" class="map-label">ENTRY</text>
-          <text x="90" y="90" text-anchor="middle" class="entry-price">{vals.aiPlan.entry || '—'}</text>
+          <text x="90" y="90" text-anchor="middle" class="entry-price">{preview ? usd(preview.entryPrice) : vals.aiPlan.entry || '—'}</text>
           <text x="236" y="16" text-anchor="end" class="profit-label">TAKE PROFIT</text>
           <text x="236" y="42" text-anchor="end" class="profit-level">{vals.aiPlan.targetLevel || '—'}</text>
           <text x="236" y="92" text-anchor="end" class="stop-label">EXIT</text>
@@ -76,7 +98,7 @@
       <div class="outcome-copy" class:loss={focus==='stop'} aria-live="polite">
         {#if estimate}
           <p class="outcome-amount">{estimate.pnl>=0?'+':'−'}{usd(Math.abs(estimate.pnl))}</p>
-          <p class="outcome-caption">Estimated {focus==='target'?'profit':'loss'} at {usd(estimate.exit)} · before fees</p>
+          <p class="outcome-caption">Estimated {focus==='target'?'profit':'loss'} at {usd(estimate.exit)} · before {preview?'exit ':''}fees</p>
         {:else if tradingSetup.settings}<p class="outcome-caption">A dollar estimate needs valid entry and exit prices for this asset.</p>{/if}
         <p class="outcome-body">{focus==='target' ? (vals.aiPlan.target || 'I still need a take-profit target for this thesis.') : (vals.aiPlan.stop || 'I still need an exit condition to protect this trade.')}</p>
       </div>
@@ -88,8 +110,11 @@
         </details>
       {/if}
       <div class="execution">
+        {#if preview}<p class="execution-status">{preview.asset.symbol} on Base{preview.asset.issuer ? ` · ${preview.asset.issuer} tokenized stock` : ''}. Execution through Definitive.</p>{/if}
+        {#if previewLoading}<p class="execution-status" role="status">Checking the live execution quote…</p>{/if}
+        {#if previewError}<p class="execution-error" role="status">{previewError}</p><button class="settings-note" onclick={()=>previewVersion++}>Check again</button>{/if}
         {#if tradingSetup.settings}<button class="settings-note" onclick={()=>openSetup(1)}>Using {usd(tradingSetup.settings.amountUsd)} · your trading settings</button>{/if}
-        <button class="execute" type="button" disabled={submitting||executedIdea===vals.aiPlan.ideaId} onclick={execute}>{submitting?'Submitting trade…':executedIdea===vals.aiPlan.ideaId?'Trade submitted':'Execute trade'}</button>
+        <button class="execute" type="button" disabled={submitting||previewLoading||!!previewError||executedIdea===vals.aiPlan.ideaId} onclick={execute}>{submitting?'Submitting trade…':executedIdea===vals.aiPlan.ideaId?'Trade submitted':'Execute trade'}</button>
         {#if executionError}<p class="execution-error" role="alert">{executionError}</p>{/if}
         {#if executedIdea===vals.aiPlan.ideaId}<p class="execution-status" role="status">Sent to Definitive. Follow its fill and exit orders in Portfolio.</p>{/if}
       </div>

@@ -99,18 +99,24 @@ Dynamic. A successful wallet prompt alone does not establish backend readiness.
 The right rail submits to `/api/trading/orders`. The server reserves the user's
 allocation under a row lock, checks the delegated wallet owner, validates quote
 signing payloads, and signs capped approvals plus an entry with attached exits.
-This execution path currently supports Base long cash positions only. It requires
-verified `routes.market_meta.definitive` data (`chain: "base"`, contract `address`,
-and integer `decimals`) and unambiguous dollar target/stop prices. The existing
-research pipeline does not yet populate that mapping: unsupported ideas remain
-research and cannot be traded by guessing a ticker's contract.
+This execution path supports Base long cash positions. Stock ideas resolve through
+the issuer-verified Coinbase token contracts for NVDA, META, AAPL, GOOGL, AMZN,
+MSFT, MSTR, SNDK, SPCX, and TSLA. The resolver rechecks the issuer's published list
+(five-minute cache), matches Definitive's exact chain/address/decimals, and reads
+the onchain multiplier to convert share-price exits into token-price exits.
+Unknown tickers and share-class substitutions fail closed. Other spot assets still
+require verified `routes.market_meta.definitive` data (`chain: "base"`, `address`,
+and `decimals`). All trades require explicit dollar target/stop prices; missing
+research levels are never invented. The authenticated `/api/trading/quote` preflight
+validates a live bracket quote without signing or reserving funds; execution obtains
+a fresh quote. Perpetuals and prediction markets are excluded from the feed.
 
 Portfolio reconciles entry and protective orders with Definitive. Entry fills
 keep capital reserved; finalized exits release it. Ambiguous submissions retain
 their reservation for review. Attached exits run at Definitive without further
 wallet prompts; this is not yet an autonomous agent that revises a thesis or
-rebalances positions. End-to-end signing, webhook delivery in deployment, and
-live execution remain unverified. No real trade has been placed during setup.
+rebalances positions. Production webhook delivery has been verified. End-to-end
+signing and live execution remain unverified; no real trade was placed during setup.
 Existing paper balances remain explicitly labeled simulated in Portfolio.
 
-Validation: `node --test src/lib/trading/settings.test.js src/lib/server/trading/*.test.js` and `npm run build`.
+Validation: `node --test src/lib/trading/*.test.js src/lib/server/trading/*.test.js` and `npm run build`.
