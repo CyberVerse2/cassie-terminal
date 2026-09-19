@@ -12,19 +12,27 @@ function ensure() {
   )`).catch(error => { ready = undefined; throw error; });
 }
 
+function rows<T>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
+  const listed = (result as { rows?: T[] } | null)?.rows;
+  return Array.isArray(listed) ? listed : [];
+}
+
+export type DelegationRow = { walletId: string; revoked: boolean; address: string | null; chain: string | null };
+
 export async function delegationStatus(userId: string) {
   await ensure();
-  return db.execute(sql`SELECT wallet_id AS "walletId", revoked,
+  return rows<DelegationRow>(await db.execute(sql`SELECT wallet_id AS "walletId", revoked,
     encrypted_material->>'publicKey' AS address,
     encrypted_material->>'chain' AS chain
-    FROM cassie_wallet_delegations WHERE user_id = ${userId}`);
+    FROM cassie_wallet_delegations WHERE user_id = ${userId}`));
 }
 
 export async function readDelegation(userId: string, walletId: string) {
   await ensure();
-  const rows = await db.execute(sql`SELECT encrypted_material FROM cassie_wallet_delegations
-    WHERE user_id = ${userId} AND wallet_id = ${walletId} AND NOT revoked`);
-  return rows[0]?.encrypted_material ?? null;
+  const listed = rows<{ encrypted_material: unknown }>(await db.execute(sql`SELECT encrypted_material FROM cassie_wallet_delegations
+    WHERE user_id = ${userId} AND wallet_id = ${walletId} AND NOT revoked`));
+  return listed[0]?.encrypted_material ?? null;
 }
 
 export async function pauseDelegation(userId: string, walletId: string) {

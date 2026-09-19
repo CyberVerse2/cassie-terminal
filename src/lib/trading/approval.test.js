@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { confirmWalletApproval, executionDelegation } from './approval.js';
+import { confirmWalletApproval, connectionCheckMessage, executionDelegation } from './approval.js';
 const wallet={id:'sdk-id',address:'0xAbc',chain:'EVM',delegated:true};
 test('an existing Dynamic approval succeeds without asking again or requiring a webhook',async()=>{
   const result=await confirmWalletApproval({wallet,hasAccess:()=>true,delegate:()=>assert.fail('Must not request approval again'),refresh:()=>[wallet],assertOwner:()=>{}});
@@ -29,4 +29,11 @@ test('execution requires both approval and a matching active server delegation',
   assert.equal(executionDelegation(wallet,{...state,liveExecutionAvailable:false}),null);
   assert.equal(executionDelegation(wallet,{...state,delegations:[{...delegation,revoked:true}]}),null);
   assert.equal(executionDelegation(wallet,{...state,delegations:[{...delegation,address:'0xdef'}]}),null);
+  assert.equal(executionDelegation(wallet,{...state,delegations:null}),null);
+});
+test('check message explains a missing server trading key',()=>{
+  const wallet={id:'sdk-id',address:'0xAbc',chain:'EVM',delegated:true};
+  assert.equal(connectionCheckMessage(wallet,{delegations:[],liveExecutionAvailable:true}), 'Cassie has your wallet approval, but the server has not received the trading key. Dynamic must deliver the delegation webhook, then check again.');
+  assert.equal(connectionCheckMessage(wallet,{delegations:[],liveExecutionAvailable:false}), 'Cassie cannot sign yet. The execution service is not live on this server.');
+  assert.equal(connectionCheckMessage(wallet,{delegations:[{walletId:'server-id',address:'0xabc',chain:'EVM',revoked:false}],liveExecutionAvailable:true}), null);
 });

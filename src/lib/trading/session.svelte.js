@@ -60,7 +60,7 @@ export async function approveTradingAccess(input, walletId) {
   void loadTradingSettings();
 }
 export async function revokeTradingAccess(wallet) {
-  const delegation=tradingSetup.delegations.find(d=>d.address?.toLowerCase()===wallet.address.toLowerCase());
+  const delegation=(Array.isArray(tradingSetup.delegations)?tradingSetup.delegations:[]).find(d=>d.address?.toLowerCase()===wallet.address.toLowerCase());
   if(delegation){const response=await fetch('/api/trading/delegation/pause',{method:'POST',headers:{'content-type':'application/json',...authHeaders()},body:JSON.stringify({walletId:delegation.walletId})});if(!response.ok)throw new Error('Could not pause trading. Try again.');}
   await revokeWaasDelegation({walletAccount:wallet});refreshWallets();await loadTradingSettings();
 }
