@@ -17,6 +17,7 @@ import { refreshAsset, discoverAssets } from './asset-directory.js';
 import { entryInRange, validatedPlan } from '$lib/trading/plan.js';
 import { authorizeSingleQuote } from './authorization.js';
 import { chainClients, signOrder } from './signer';
+import { signerFailure, signingTransaction } from './signing-transaction.js';
 import { BASE_USDC_MARKET, requireUsdc } from './usdc.js';
 
 export async function prepareTrade(userId:string,ideaId:string,walletId:string) {
@@ -42,6 +43,11 @@ export async function prepareTrade(userId:string,ideaId:string,walletId:string) 
   Object.assign(intent,{settlement});
   const balances=(await flash(`/balances/${encodeURIComponent(intent.address)}`)).balances??[];
   requireUsdc(balances,limits.amountUsd,settlement);
+  const feeChain=cross?market.chain:'base';
+  const {rpc}=chainClients(feeChain);
+  if(await rpc.getBalance({address:intent.address as `0x${string}`})===0n){
+    throw Error(`Fund network fees on ${feeChain} in Portfolio so Cassie can approve this trade.`);
+  }
   const order={targetChain:market.chain,contraChain:'base',targetAsset:intent.asset,contraAsset:BASE_USDC,side:'buy',qty:intent.amount,orderType:'market',maxSlippage:'0.01',maxPriceImpact:'0.03',funderAddress:intent.address,...(cross?{recipientAddress:intent.address}:{})};
   const bracket={takeProfit:{notionalPrice:intent.target},stopLoss:{notionalPrice:intent.stop}};
   const quote=await flash('/quote',{...order,...(!cross?{attachedBracket:bracket}:{})});
@@ -50,8 +56,6 @@ export async function prepareTrade(userId:string,ideaId:string,walletId:string) 
     const protection={targetChain:market.chain,contraChain:market.chain,targetAsset:market.address,contraAsset:settlement.address,side:'sell',qty:quote.to.amount,orderType:'stop-loss',triggers:[{notionalPrice:intent.stop,triggerType:'lower'}],maxSlippage:'0.01',maxPriceImpact:'0.1',funderAddress:intent.address};
     authorizeSingleQuote(await flash('/quote',protection),protection,market.decimals);
   }
-  // Do not strand a cross-chain entry without the ability to authorize exits.
-  if(cross){const {rpc}=chainClients(market.chain);if(await rpc.getBalance({address:intent.address as `0x${string}`})===0n)throw Error(`Fund network fees on ${market.chain} in Portfolio so Cassie can protect and manage the position.`);}
   const entry=Number(intent.amount)/Number(quote.to.amount);
   if(!entryInRange(entry,plan))throw new Error('The live execution price is outside this trade’s exit levels.');
   return {walletId:String(wallet.walletId),intent,market,order,bracket,quote,payloads,entry};
@@ -94,14 +98,19 @@ export async function executeTrade(userId:string,ideaId:string,selectedWalletId:
         const data=encodeFunctionData({abi:erc20Abi,functionName:'approve',args:[FLASH_ALLOWANCE,cap]});
         const request=await txBuilder.prepareTransactionRequest({account:intent.address as `0x${string}`,to:token as `0x${string}`,data,value:0n});
         if(request.gas>250000n||request.gas*(request.maxFeePerGas??request.gasPrice??0n)>1000000000000000n)throw new Error('Approval gas exceeds the transaction limit.');
-        const serialized=await delegatedSignTransaction(client,{...await credentials(),transaction:request as any});
+        let serialized;
+        try{serialized=await delegatedSignTransaction(client,{...await credentials(),transaction:signingTransaction(request,8453)});}
+        catch(error){signerFailure(error);}
         const hash=await rpc.sendRawTransaction({serializedTransaction:serialized as `0x${string}`});
         const receipt=await rpc.waitForTransactionReceipt({hash,timeout:60000});
         if(receipt.status!=='success')throw new Error('Token approval failed.');
       }
       if(Number(payloads.entry.message.deadline)<=Date.now()/1000+15)throw new Error('Quote expired during wallet setup. Try again.');
-      const userSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.entry});
-      const bracketSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.exit});
+      let userSignature, bracketSignature;
+      try {
+        userSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.entry});
+        bracketSignature=await delegatedSignTypedData(client,{...await credentials(),typedData:payloads.exit});
+      } catch(error){signerFailure(error);}
       // Persist ambiguity before submitting. Network failures must not free
       // capital or silently submit a second order on the next click.
       await updateOrder(id,'submitting',{quoteId:quote.quoteId});

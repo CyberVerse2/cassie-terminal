@@ -8,6 +8,7 @@ import {readDelegation} from './delegations';
 import {EVM_CHAINS} from './asset-directory.js';
 import {FLASH_ALLOWANCE,authorizeSingleQuote} from './authorization.js';
 import {flash} from './flash';
+import {signerFailure,signingTransaction} from './signing-transaction.js';
 export function chainClients(name:string){
   const chain=Object.values(chains).find((c:any)=>c.id===EVM_CHAINS[name]);
   if(!chain)throw Error('This EVM chain has no configured RPC client.');
@@ -23,9 +24,9 @@ export function delegatedSigner(userId:string,walletId:string,address:string){
     return {walletId,walletApiKey:d.decryptedWalletApiKey,keyShare:d.decryptedDelegatedShare};
   }
   return {credentials,
-    typed:async(data:any)=>delegatedSignTypedData(client,{...await credentials(),typedData:data}),
-    message:async(message:string)=>delegatedSignMessage(client,{...await credentials(),message}),
-    transaction:async(transaction:any)=>delegatedSignTransaction(client,{...await credentials(),transaction}),
+    typed:async(data:any)=>{try{return await delegatedSignTypedData(client,{...await credentials(),typedData:data});}catch(error){signerFailure(error);}},
+    message:async(message:string)=>{try{return await delegatedSignMessage(client,{...await credentials(),message});}catch(error){signerFailure(error);}},
+    transaction:async(transaction:any,chainId:number)=>{try{return await delegatedSignTransaction(client,{...await credentials(),transaction:signingTransaction(transaction,chainId)});}catch(error){signerFailure(error);}},
   };
 }
 export async function approveExact(signer:ReturnType<typeof delegatedSigner>,chain:string,address:string,token:string,amount:bigint){
@@ -37,7 +38,7 @@ export async function approveExact(signer:ReturnType<typeof delegatedSigner>,cha
   const data=encodeFunctionData({abi:erc20Abi,functionName:'approve',args:[FLASH_ALLOWANCE,amount]});
   const request=await wallet.prepareTransactionRequest({account:address as `0x${string}`,to:token as `0x${string}`,data,value:0n});
   if(request.gas>250000n||request.gas*(request.maxFeePerGas??request.gasPrice??0n)>1000000000000000n)throw Error('Approval gas exceeds the transaction limit.');
-  const raw=await signer.transaction(request);
+  const raw=await signer.transaction(request,EVM_CHAINS[chain]);
   const hash=await rpc.sendRawTransaction({serializedTransaction:raw as `0x${string}`});
   if((await rpc.waitForTransactionReceipt({hash,timeout:60000})).status!=='success')throw Error('Token approval failed.');
 }
