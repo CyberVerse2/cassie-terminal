@@ -221,3 +221,28 @@ export async function historicalBars(
     volume: bar.v,
   }));
 }
+
+const postedCache = new Map<string, { at: number; price: number | null }>();
+const postedInflight = new Map<string, Promise<number | null>>();
+
+export async function priceAt(ticker: string, at: Date): Promise<number | null> {
+  const key = `${ticker.toUpperCase()}:${Math.floor(at.getTime() / 60_000)}`;
+  const cached = postedCache.get(key);
+  if (cached) return cached.price;
+  const active = postedInflight.get(key);
+  if (active) return active;
+  const pending = (async () => {
+    try {
+      const bars = await historicalBars(ticker, new Date(at.getTime() - 7 * 86_400_000), at, '5Min');
+      return bars.at(-1)?.close ?? null;
+    } catch {
+      return null;
+    }
+  })().then((price) => {
+    postedCache.set(key, { at: Date.now(), price });
+    postedInflight.delete(key);
+    return price;
+  });
+  postedInflight.set(key, pending);
+  return pending;
+}

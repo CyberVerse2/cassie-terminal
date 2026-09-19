@@ -8,7 +8,7 @@ export const config = {
   alpacaClientId: env.ALPACA_CLIENT_ID ?? '',
   alpacaClientSecret: env.ALPACA_CLIENT_SECRET ?? '',
   alpacaEnvironment: env.ALPACA_ENV ?? '',
-  coingeckoApiKey: env.COINGECKO_API_KEY ?? '',
+  polygonApiKey: env.POLYGON_API_KEY ?? '',
   hyperliquidApiUrl: env.HYPERLIQUID_API_URL ?? 'https://api.hyperliquid.xyz',
   polymarketGammaUrl: env.POLYMARKET_GAMMA_API_URL ?? 'https://gamma-api.polymarket.com',
   polymarketClobUrl: env.POLYMARKET_CLOB_API_URL ?? 'https://clob.polymarket.com',

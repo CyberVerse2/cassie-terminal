@@ -14,10 +14,9 @@ function buildGroup(members: Candidate[]) {
     (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
   );
   const newest = ordered[0];
+  const rank={high:3,medium:2,low:1};
   const best = ordered.reduce((winner, member) =>
-    (member.sincePostedPct ?? Number.NEGATIVE_INFINITY) > (winner.sincePostedPct ?? Number.NEGATIVE_INFINITY)
-      ? member
-      : winner
+    (rank[member.conviction??'low']??0) > (rank[winner.conviction??'low']??0) ? member : winner
   );
   const authorCount = new Set(ordered.map((member) => member.author.handle)).size;
   const horizons = new Set(ordered.map((member) => member.horizon).filter(Boolean));

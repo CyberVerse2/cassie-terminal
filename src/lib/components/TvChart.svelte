@@ -60,7 +60,7 @@
         if (!response.ok) throw new Error(data.error || `Chart data failed (${response.status})`);
         if (requestController.signal.aborted) return;
 
-        const probability = data.seriesType === 'probability';
+        const probability = ['probability','line'].includes(data.seriesType);
         const points = data.data
           .filter((point) => Number.isFinite(point.time) && (
             probability ? Number.isFinite(point.value) : Number.isFinite(point.close)

@@ -17,7 +17,7 @@ cassie-indexer  ──writes──►  Postgres  ◄──reads──  cassie-te
 - **Backend** (`src/lib/server/`, `src/routes/api/`): SvelteKit endpoints over Drizzle +
   postgres.js. `feed.ts` runs the queries; `serialize.ts` shapes rows into feed cards /
   detail and computes **live** `currentPrice` + direction-adjusted `sincePostedPct` by
-  hitting the venues (Hyperliquid / Alpaca IEX / CoinGecko / Polymarket) at read time.
+  hitting the venues (Definitive / Hyperliquid / Alpaca IEX / Polymarket) at read time.
   - `GET /api/ideas?tab=all|perps|stocks|tokens|markets` → `{ cards, nextCursor }`; The Desk treats every routed idea as a Cassie call, orders calls by the pipeline's conviction judgment, and collapses repeated instrument-side calls into one opportunity
   - `GET /api/ideas/:id` → decision-ready detail (`thesis`, three `alphaDrivers`, and normalized `plan`)
   - `GET /api/authors/:handle` → track record (win rate, avg since-posted)
@@ -49,7 +49,7 @@ npm run dev          # http://localhost:5173
 
 `.env` keys: `DATABASE_URL` (required), `PUBLIC_DYNAMIC_ENVIRONMENT_ID` (email sign-up),
 `ALPACA_CLIENT_ID`, `ALPACA_CLIENT_SECRET`, and
-`ALPACA_ENV=sandbox|live` (required for equity prices), `COINGECKO_API_KEY` (optional), and the public
+`ALPACA_ENV=sandbox|live` (required for equity prices), and the public
 `HYPERLIQUID_API_URL` / `POLYMARKET_*` defaults.
 
 ## Build

@@ -2,7 +2,7 @@ import { schema } from './db/client';
 import * as hl from './venues/hyperliquid';
 import * as pm from './venues/polymarket';
 import * as alpaca from './venues/alpaca';
-import * as coingecko from './venues/coingecko';
+import * as binance from './venues/binance';
 
 type IdeaRow = typeof schema.tradeIdeas.$inferSelect;
 type RouteRow = typeof schema.routes.$inferSelect;
@@ -21,7 +21,6 @@ export interface FeedRow {
 const VENUE_LABEL: Record<string, string> = {
   hyperliquid: 'HYPERLIQUID',
   equity: 'STOCKS',
-  coingecko: 'SPOT',
   polymarket: 'POLYMARKET',
 };
 
@@ -86,6 +85,14 @@ export async function liveCurrentPrice(
   }
 
   switch (route.venue) {
+    case 'definitive': {
+      const {refreshAsset}=await import('./trading/asset-directory.js');
+      const {flash}=await import('./trading/flash');
+      const market=await refreshAsset((route.marketMeta as any)?.definitive,flash);
+      const {observe}=await import('./trading/observations');
+      await observe(market);
+      return market.price;
+    }
     case 'hyperliquid': {
       const price = await hl.livePrice(route.ticker, (route.marketMeta as HlMeta | null)?.dex ?? '');
       if (price === null) throw new Error(`Hyperliquid returned no live price for ${route.ticker}`);
@@ -93,11 +100,6 @@ export async function liveCurrentPrice(
     }
     case 'equity': {
       return alpaca.currentPrice(route.ticker);
-    }
-    case 'coingecko': {
-      const price = await coingecko.currentPrice(route.ticker);
-      if (price === null) throw new Error(`CoinGecko returned no live price for ${route.ticker}`);
-      return price;
     }
     case 'polymarket': {
       const price = await pm.currentPrice(route.ticker, direction === 'no' ? 'no' : 'yes');
@@ -125,7 +127,7 @@ async function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> 
 /** Compact feed card — everything the terminal feed renders, nothing more. */
 export async function toFeedCard(row: FeedRow) {
   const { idea, route, pricing, post, source } = row;
-  const entryPrice = num(pricing?.entryPrice ?? null);
+  let entryPrice = num(pricing?.entryPrice ?? null);
   let currentPrice: number | null = null;
   let currentPriceError: string | null = null;
   try {
@@ -136,6 +138,17 @@ export async function toFeedCard(row: FeedRow) {
   } catch (err) {
     currentPriceError = err instanceof Error ? err.message : String(err);
   }
+  let postedMove = sincePostedPct(entryPrice, currentPrice, route.direction);
+  if (postedMove === null && route.venue === 'definitive' && route.ticker) {
+    const posted = route.instrument === 'spot'
+      ? await binance.priceAt(route.ticker, idea.postedAt)
+      : await alpaca.priceAt(route.ticker, idea.postedAt);
+    const now = route.instrument === 'spot'
+      ? await binance.currentPrice(route.ticker)
+      : await alpaca.currentPrice(route.ticker).catch(() => null);
+    if (entryPrice === null) entryPrice = posted;
+    postedMove = sincePostedPct(posted, now, route.direction);
+  }
 
   return {
     id: idea.id,
@@ -145,7 +158,7 @@ export async function toFeedCard(row: FeedRow) {
     category: category(route),
     ticker: displayTicker(route),
     direction: route.direction,
-    sincePostedPct: sincePostedPct(entryPrice, currentPrice, route.direction),
+    sincePostedPct: postedMove,
     currentPrice,
     currentPriceError,
     entryPrice,
@@ -171,7 +184,12 @@ export async function toDetail(row: FeedRow, invalidatingRow: FeedRow | null = n
   const { idea, route } = row;
   const strategy = idea.strategy;
   const authorComponent = (text: string | null) => text ? { text, basis: 'author' as const } : null;
-  const plan = {
+  const executionPlan=(route.marketMeta as any)?.executionPlan;
+  const plan = executionPlan?.version===1 ? {
+    target:{text:String(executionPlan.targets[0]?.price??''),basis:'suggested' as const},
+    stop:{text:String(executionPlan.stopPrice),basis:'suggested' as const},
+    horizon:{text:idea.horizon??'unspecified',basis:'suggested' as const},
+  } : {
     target: authorComponent(idea.target) ?? strategy?.takeProfit ?? null,
     stop: authorComponent(idea.invalidation) ?? strategy?.stopLoss ?? null,
     horizon: authorComponent(idea.horizon) ?? strategy?.hold ?? null,
@@ -226,6 +244,8 @@ export async function toDetail(row: FeedRow, invalidatingRow: FeedRow | null = n
       },
     } : null,
     plan,
+    executionPlan:executionPlan??null,
+    executionAsset:(route.marketMeta as any)?.definitive??null,
     recommendedSetup: {
       side: route.direction,
       entry: { type: 'market' as const },

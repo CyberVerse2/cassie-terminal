@@ -2,9 +2,10 @@ import { and, desc, eq, lt, ne, sql, type SQL } from 'drizzle-orm';
 import { db, schema } from './db/client';
 import { toFeedCard, toDetail, type FeedRow } from './serialize';
 import * as alpaca from './venues/alpaca';
-import * as coingecko from './venues/coingecko';
+import * as binance from './venues/binance';
 import * as hl from './venues/hyperliquid';
 import * as pm from './venues/polymarket';
+import { observations } from './trading/observations';
 
 const { tradeIdeas, routes, routePricing, rawPosts, sources } = schema;
 
@@ -26,6 +27,16 @@ function baseQuery() {
     .leftJoin(sources, eq(sources.handle, tradeIdeas.authorHandle));
 }
 
+function publishableRoute(): SQL[] {
+  return [
+    eq(routes.status, 'routed'),
+    eq(routes.venue, 'definitive'),
+    eq(routes.direction, 'long'),
+    sql`${routes.instrument} IN ('shares', 'spot')`,
+    sql`${routes.marketMeta}->'executionPlan'->>'version'='1' AND (${routes.marketMeta}->'executionPlan'->>'expiresAt')::timestamptz>now()`,
+  ];
+}
+
 function tabFilter(tab: string): SQL | undefined {
   switch (tab) {
     case 'perps':
@@ -42,7 +53,7 @@ function tabFilter(tab: string): SQL | undefined {
 }
 
 export async function listIdeas(tab: string, limit: number, cursor: string | null) {
-  const filters: SQL[] = [eq(routes.status, 'routed'), sql`${routes.instrument} IN ('shares', 'spot')`];
+  const filters: SQL[] = [...publishableRoute()];
   const routeTab = tabFilter(tab);
   if (routeTab) filters.push(routeTab);
   if (cursor) filters.push(lt(tradeIdeas.postedAt, new Date(cursor)));
@@ -81,7 +92,7 @@ export async function listIdeas(tab: string, limit: number, cursor: string | nul
 }
 
 export async function listTradeCandidates(limit: number, tab = 'all') {
-  const filters: SQL[] = [eq(routes.status, 'routed'), sql`${routes.instrument} IN ('shares', 'spot')`];
+  const filters: SQL[] = [...publishableRoute()];
   const routeTab = tabFilter(tab);
   if (routeTab) filters.push(routeTab);
   const rows = (await baseQuery()
@@ -92,7 +103,9 @@ export async function listTradeCandidates(limit: number, tab = 'all') {
 }
 
 export async function getIdea(id: string) {
-  const [row] = (await baseQuery().where(eq(tradeIdeas.id, id)).limit(1)) as FeedRow[];
+  const [row] = (await baseQuery()
+    .where(and(eq(tradeIdeas.id, id), ...publishableRoute()))
+    .limit(1)) as FeedRow[];
   if (!row) return null;
   const opposingDirection = ({ long: 'short', short: 'long', yes: 'no', no: 'yes' } as const)[
     row.route.direction as 'long' | 'short' | 'yes' | 'no'
@@ -151,14 +164,6 @@ function chartWindow(postedAt: Date, requestedInterval: ChartInterval | null) {
   };
 }
 
-function coingeckoDays(days: number) {
-  if (days <= 30) return '30';
-  if (days <= 90) return '90';
-  if (days <= 180) return '180';
-  if (days <= 365) return '365';
-  return 'max';
-}
-
 /** Venue-native series used by the synchronized trade chart. */
 export async function getIdeaChart(id: string, requestedInterval: ChartInterval | null = null) {
   const [row] = (await baseQuery().where(eq(tradeIdeas.id, id)).limit(1)) as FeedRow[];
@@ -170,6 +175,21 @@ export async function getIdeaChart(id: string, requestedInterval: ChartInterval 
   const end = new Date();
   const start = new Date(end.getTime() - window.days * DAY_MS);
 
+  if(route.venue==='definitive'){
+    try {
+      const data = route.instrument === 'spot'
+        ? await binance.historicalBars(route.ticker, start, end, window.alpaca)
+        : await alpaca.historicalBars(route.ticker, start, end, window.alpaca);
+      return {
+        seriesType: 'candlestick' as const,
+        data,
+        interval: window.label,
+        intervals: window.intervals,
+      };
+    } catch {
+      return {seriesType:'line' as const,data:await observations((route.marketMeta as any)?.definitive),interval:'1m',intervals:['1m']};
+    }
+  }
   if (route.venue === 'equity') {
     return {
       seriesType: 'candlestick' as const,
@@ -184,15 +204,6 @@ export async function getIdeaChart(id: string, requestedInterval: ChartInterval 
       data: await hl.historicalBars(route.ticker, start, end, window.hyperliquid),
       interval: window.label,
       intervals: window.intervals,
-    };
-  }
-  if (route.venue === 'coingecko') {
-    const days = coingeckoDays(window.days);
-    return {
-      seriesType: 'candlestick' as const,
-      data: await coingecko.historicalBars(route.ticker, days),
-      interval: Number(days) <= 2 ? '30m' : Number(days) <= 30 ? '4h' : '4d',
-      intervals: [Number(days) <= 2 ? '30m' : Number(days) <= 30 ? '4h' : '4d'],
     };
   }
   if (route.venue === 'polymarket') {
